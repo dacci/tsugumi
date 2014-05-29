@@ -105,11 +105,11 @@ public class EPubBuilder {
             }
         }
 
-        try (ZipOutputStream zipStream = new ZipOutputStream(
-                new BufferedOutputStream(Files.newOutputStream(path,
-                        StandardOpenOption.CREATE)))) {
-            byte[] bytes = "application/epub+zip"
-                    .getBytes(StandardCharsets.UTF_8);
+        try (ZipOutputStream zipStream =
+                new ZipOutputStream(new BufferedOutputStream(
+                        Files.newOutputStream(path, StandardOpenOption.CREATE)))) {
+            byte[] bytes =
+                    "application/epub+zip".getBytes(StandardCharsets.UTF_8);
 
             CRC32 crc32 = new CRC32();
             crc32.update(bytes);

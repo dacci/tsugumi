@@ -127,8 +127,8 @@ public class AozoraParser implements Closeable {
                 break;
 
             default:
-                throw new ParserException("line: " + row
-                        + ", illegal meta data count: " + metaData.size());
+                throw new ParserException("line: " + row +
+                        ", illegal meta data count: " + metaData.size());
             }
 
             stack.clear();
@@ -138,8 +138,8 @@ public class AozoraParser implements Closeable {
             while ((line = reader.readLine()) != null) {
                 ++row;
 
-                if (line.length() > 1 && line.charAt(0) == '　'
-                        && line.charAt(1) != '　') {
+                if (line.length() > 1 && line.charAt(0) == '　' &&
+                        line.charAt(1) != '　') {
                     line = line.substring(1);
                 }
 
@@ -183,8 +183,8 @@ public class AozoraParser implements Closeable {
 
         case "地付き":
             context.push(context.peek().addParagraph());
+            context.peek().setStyle("align-end");
             parseLine(line.substring(tagMatcher.end()));
-            context.pop().setStyle("align-end");
             return;
         }
 
@@ -201,7 +201,7 @@ public class AozoraParser implements Closeable {
             if (type.equals("ゴシック体")) {
                 paragraph.setStyle("gfont");
             } else if (type.endsWith("字下げ")) {
-                int amount = parseInt(type, 0, type.length() - 3);
+                int amount = parseInt(type, 0, type.length() - 3) / 2;
                 paragraph.setStyle("start-" + amount + "em");
             } else {
                 System.err.println("unsupported tag: " + type);
@@ -215,8 +215,8 @@ public class AozoraParser implements Closeable {
             String start = matcher.group(1);
             String end = stack.pop();
             if (!end.endsWith(start)) {
-                throw new ParserException("line: " + row + ", unmatched tag: "
-                        + end + " vs " + start);
+                throw new ParserException("line: " + row + ", unmatched tag: " +
+                        end + " vs " + start);
             }
 
             context.pop();
@@ -249,7 +249,7 @@ public class AozoraParser implements Closeable {
             return;
         }
 
-        System.err.println(line);
+        System.err.println("unsupported tag: " + line);
 
         if (!line.isEmpty()) {
             page.addParagraph().addElement(new Text(line));
