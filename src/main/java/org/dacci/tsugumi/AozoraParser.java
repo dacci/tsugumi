@@ -138,11 +138,6 @@ public class AozoraParser implements Closeable {
             while ((line = reader.readLine()) != null) {
                 ++row;
 
-                if (line.length() > 1 && line.charAt(0) == '　' &&
-                        line.charAt(1) != '　') {
-                    line = line.substring(1);
-                }
-
                 Matcher matcher = TAG_PATTERN.matcher(line);
                 if (matcher.lookingAt()) {
                     parseTag(line, matcher);
