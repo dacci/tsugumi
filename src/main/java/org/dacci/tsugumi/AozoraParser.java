@@ -311,7 +311,18 @@ public class AozoraParser implements Closeable {
                 break;
 
             default:
-                System.err.println("unknown annotation: " + type);
+                if (type.endsWith("段階大きい文字")) {
+                    int amount =
+                            parseInt(line, matcher.start(2), matcher.end(2) - 7) * 10 + 100;
+                    text.setStyle(String.format("font-%03dper", amount));
+                } else if (type.endsWith("段階小さい文字")) {
+                    int amount =
+                            100 - parseInt(line, matcher.start(2),
+                                    matcher.end(2) - 7) * 10;
+                    text.setStyle(String.format("font-%03dper", amount));
+                } else {
+                    System.err.println("unknown annotation: " + type);
+                }
             }
 
             Integer start = matcher.start();
@@ -341,6 +352,10 @@ public class AozoraParser implements Closeable {
      * @return
      */
     private int parseInt(String string, int start, int end) {
+        if (start >= end) {
+            throw new IllegalArgumentException();
+        }
+
         String digits = "０１２３４５６７８９";
         int result = 0;
 
