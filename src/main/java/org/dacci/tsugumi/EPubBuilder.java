@@ -8,7 +8,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -231,7 +231,7 @@ public class EPubBuilder {
         spine.setAttribute("page-progression-direction", "rtl");
         root.appendChild(spine);
 
-        for (Page page : book.getPages()) {
+        Consumer<Page> pageAdder = (Page page) -> {
             Element item = document.createElement("item");
             item.setAttribute("media-type", "application/xhtml+xml");
             item.setAttribute("id", page.getId());
@@ -243,7 +243,13 @@ public class EPubBuilder {
             itemref.setAttribute("idref", page.getId());
             itemref.setAttribute("properties", "page-spread-left");
             spine.appendChild(itemref);
+        };
+
+        if (book.hasCoverImage()) {
+            pageAdder.accept(book.getCoverPage());
         }
+
+        book.getPages().forEach(pageAdder);
 
         for (String style : styles) {
             Element item = document.createElement("item");
@@ -253,14 +259,25 @@ public class EPubBuilder {
             manifest.appendChild(item);
         }
 
-        for (Image image : book.getImages()) {
+        if (book.hasCoverImage()) {
+            Image image = book.getCoverImage();
+            String href = "image/" + image.getId() + "." + image.getExtension();
+
             Element item = document.createElement("item");
             item.setAttribute("media-type", Image.getContentType(image));
             item.setAttribute("id", image.getId());
-            item.setAttribute(
-                    "href",
-                    String.format("image/%s.%s", image.getId(),
-                            image.getExtension()));
+            item.setAttribute("href", href);
+            item.setAttribute("properties", "cover-image");
+            manifest.appendChild(item);
+        }
+
+        for (Image image : book.getImages()) {
+            String href = "image/" + image.getId() + "." + image.getExtension();
+
+            Element item = document.createElement("item");
+            item.setAttribute("media-type", Image.getContentType(image));
+            item.setAttribute("id", image.getId());
+            item.setAttribute("href", href);
             manifest.appendChild(item);
         }
 
@@ -312,7 +329,11 @@ public class EPubBuilder {
         li.appendChild(a);
 
         zipStream.putNextEntry(new ZipEntry("item/navigation-documents.xhtml"));
-        writeXHTML(document, zipStream);
+        zipStream.write(DOCTYPE_HTML5.getBytes());
+        zipStream.write(LINE_SEPARATOR);
+
+        transformer.transform(new DOMSource(document), new StreamResult(
+                zipStream));
         zipStream.closeEntry();
     }
 
@@ -324,13 +345,12 @@ public class EPubBuilder {
      */
     private void buildPages(Book book, ZipOutputStream zipStream)
             throws IOException, TransformerException {
-        for (Page page : book.getPages()) {
-            Document document = page.generate(builder);
+        if (book.hasCoverImage()) {
+            writePage(book.getCoverPage(), zipStream);
+        }
 
-            zipStream.putNextEntry(new ZipEntry("item/xhtml/" + page.getId()
-                    + ".xhtml"));
-            writeXHTML(document, zipStream);
-            zipStream.closeEntry();
+        for (Page page : book.getPages()) {
+            writePage(page, zipStream);
         }
     }
 
@@ -354,31 +374,54 @@ public class EPubBuilder {
             zipStream.closeEntry();
         }
 
+        if (book.hasCoverImage()) {
+            writeImage(book.getCoverImage(), zipStream);
+        }
+
         for (Image image : book.getImages()) {
-            String name = image.getId() + "." + image.getExtension();
-            zipStream.putNextEntry(new ZipEntry("item/image/" + name));
-
-            try (BufferedInputStream in = new BufferedInputStream(
-                    Files.newInputStream(image.getPath()))) {
-                ByteStreams.copy(in, zipStream);
-            }
-
-            zipStream.closeEntry();
+            writeImage(image, zipStream);
         }
     }
 
     /**
-     * @param document
-     * @param stream
+     * @param page
+     * @param zipStream
      * @throws IOException
      * @throws TransformerException
      */
-    private void writeXHTML(Document document, OutputStream stream)
+    private void writePage(Page page, ZipOutputStream zipStream)
             throws IOException, TransformerException {
-        stream.write(DOCTYPE_HTML5.getBytes());
-        stream.write(LINE_SEPARATOR);
+        Document document = page.generate(builder);
 
-        transformer
-                .transform(new DOMSource(document), new StreamResult(stream));
+        zipStream.putNextEntry(new ZipEntry("item/xhtml/" + page.getId() +
+                ".xhtml"));
+
+        zipStream.write(DOCTYPE_HTML5.getBytes());
+        zipStream.write(LINE_SEPARATOR);
+
+        transformer.transform(new DOMSource(document), new StreamResult(
+                zipStream));
+
+        zipStream.closeEntry();
+    }
+
+    /**
+     * @param image
+     * @param zipStream
+     * @throws IOException
+     */
+    private void writeImage(Image image, ZipOutputStream zipStream)
+            throws IOException {
+        String name = image.getId() + "." + image.getExtension();
+        zipStream.putNextEntry(new ZipEntry("item/image/" + name));
+
+        try (BufferedInputStream in =
+                new BufferedInputStream(Files.newInputStream(image.getPath()))) {
+            ByteStreams.copy(in, zipStream);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        zipStream.closeEntry();
     }
 }

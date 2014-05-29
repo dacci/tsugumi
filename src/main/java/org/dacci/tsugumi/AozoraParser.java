@@ -67,6 +67,8 @@ public class AozoraParser implements Closeable {
 
     private Page page;
 
+    private boolean imageFound = false;
+
     /**
      * @throws IOException
      */
@@ -230,13 +232,19 @@ public class AozoraParser implements Closeable {
                         path.toString()));
             }
 
-            Image image = book.createImage(path);
+            if (imageFound) {
+                Image image = book.createImage(path);
 
-            if (matcher.start(1) > 0) {
-                image.setCaption(matcher.group(1));
+                if (matcher.start(1) > 0) {
+                    image.setCaption(matcher.group(1));
+                }
+
+                page.addParagraph().addElement(image);
+            } else {
+                imageFound = true;
+
+                book.setCoverImage(path);
             }
-
-            page.addParagraph().addElement(image);
 
             return;
         }

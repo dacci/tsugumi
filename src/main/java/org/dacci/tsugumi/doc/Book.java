@@ -29,6 +29,10 @@ public class Book {
 
     private final List<Image> images = new ArrayList<>();
 
+    private Image coverImage;
+
+    private CoverPage coverPage;
+
     /**
      * 
      */
@@ -156,9 +160,50 @@ public class Book {
      * @return
      */
     public Image createImage(Path path) {
-        Image image = new Image(path, images.size());
+        String id = String.format("img-%03d", images.size());
+        Image image = new Image(path, id);
         images.add(image);
 
         return image;
+    }
+
+    /**
+     * @return
+     */
+    public boolean hasCoverImage() {
+        return coverImage != null;
+    }
+
+    /**
+     * @return the coverImage
+     */
+    public Image getCoverImage() {
+        return coverImage;
+    }
+
+    /**
+     * @param coverImage
+     *            the coverImage to set
+     */
+    public void setCoverImage(Image coverImage) {
+        this.coverImage = coverImage;
+    }
+
+    /**
+     * @param path
+     */
+    public void setCoverImage(Path path) {
+        coverImage = new Image(path, "cover");
+
+        if (coverPage == null) {
+            coverPage = new CoverPage(this);
+        }
+    }
+
+    /**
+     * @return the coverPage
+     */
+    public CoverPage getCoverPage() {
+        return coverPage;
     }
 }

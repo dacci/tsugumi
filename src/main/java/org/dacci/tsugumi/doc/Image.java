@@ -44,10 +44,9 @@ public class Image implements Section {
     /**
      * @param path
      */
-    Image(Path path, int index) {
+    Image(Path path, String id) {
         this.path = path;
-
-        id = String.format("img-%03d", index);
+        this.id = id;
 
         String name = path.getFileName().toString().toLowerCase();
         extension = name.substring(name.lastIndexOf('.') + 1);
