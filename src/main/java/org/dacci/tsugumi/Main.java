@@ -7,7 +7,12 @@ package org.dacci.tsugumi;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.dacci.tsugumi.doc.Book;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +25,20 @@ public final class Main {
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-        for (String arg : args) {
+        Options options = new Options();
+        options.addOption("d", "directory", false, "Save as directory.");
+
+        try {
+            CommandLine commandLine = new GnuParser().parse(options, args);
+            main(commandLine);
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void main(CommandLine commandLine) {
+        for (String arg : (List<String>) commandLine.getArgList()) {
             Path path = Paths.get(arg);
             Book book = null;
 
@@ -38,7 +56,12 @@ public final class Main {
                 builder.build(book);
 
                 String name = book.getAuthor() + " - " + book.getTitle();
-                builder.saveToFile(path.resolveSibling(name + ".epub"));
+
+                if (commandLine.hasOption("directory")) {
+                    builder.saveToDirectory(path.resolveSibling(name));
+                } else {
+                    builder.saveToFile(path.resolveSibling(name + ".epub"));
+                }
             } catch (BuilderException | IOException e) {
                 log.error("Failed to build", e);
                 return;
