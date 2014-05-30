@@ -21,7 +21,7 @@ public final class Main {
 
     public static void main(String[] args) {
         for (String arg : args) {
-            Path path = Paths.get(arg).toAbsolutePath();
+            Path path = Paths.get(arg);
             Book book = null;
 
             log.info("Start building {}", path);
@@ -35,8 +35,11 @@ public final class Main {
 
             try {
                 EPubBuilder builder = new EPubBuilder();
-                builder.build(book, path);
-            } catch (BuilderException e) {
+                builder.build(book);
+
+                String name = book.getAuthor() + " - " + book.getTitle();
+                builder.saveToFile(path.resolveSibling(name + ".epub"));
+            } catch (BuilderException | IOException e) {
                 log.error("Failed to build", e);
                 return;
             }

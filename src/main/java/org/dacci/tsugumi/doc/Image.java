@@ -15,8 +15,8 @@ import org.w3c.dom.Node;
  */
 public class Image implements Section {
 
-    public static String getContentType(Image image) {
-        switch (image.getExtension()) {
+    public static String getContentType(String extension) {
+        switch (extension) {
         case "png":
             return "image/png";
 

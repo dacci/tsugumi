@@ -4,9 +4,11 @@
 
 package org.dacci.tsugumi.doc;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author dacci
@@ -205,5 +207,42 @@ public class Book {
      */
     public CoverPage getCoverPage() {
         return coverPage;
+    }
+
+    /**
+     * @return
+     */
+    public String getUniqueId() {
+        StringBuilder builder = new StringBuilder();
+
+        if (title != null) {
+            builder.append(title);
+        }
+
+        if (originalTitle != null) {
+            builder.append(originalTitle);
+        }
+
+        if (subTitle != null) {
+            builder.append(subTitle);
+        }
+
+        if (originalSubTitle != null) {
+            builder.append(originalSubTitle);
+        }
+
+        if (author != null) {
+            builder.append(author);
+        }
+
+        if (translator != null) {
+            builder.append(translator);
+        }
+
+        UUID uuid =
+                UUID.nameUUIDFromBytes(builder.toString().getBytes(
+                        StandardCharsets.UTF_8));
+
+        return "urn:uuid:" + uuid;
     }
 }
