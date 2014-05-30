@@ -4,14 +4,16 @@
 
 package org.dacci.tsugumi;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,8 +42,6 @@ import org.dacci.tsugumi.doc.Image;
 import org.dacci.tsugumi.doc.Page;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-
-import com.google.common.io.ByteStreams;
 
 /**
  * @author tsudasn
@@ -319,77 +319,23 @@ public class EPubBuilder {
      */
     public void saveToFile(Path path) throws IOException {
         try (ZipOutputStream out =
-                new ZipOutputStream(new BufferedOutputStream(
-                        Files.newOutputStream(path)))) {
+                new ZipOutputStream(Files.newOutputStream(path))) {
             CRC32 crc32 = new CRC32();
             crc32.update(MIMETYPE);
 
             ZipEntry mimetype = new ZipEntry("mimetype");
+            mimetype.setMethod(ZipOutputStream.STORED);
             mimetype.setSize(MIMETYPE.length);
             mimetype.setCrc(crc32.getValue());
 
-            out.setMethod(ZipOutputStream.STORED);
             out.putNextEntry(mimetype);
             out.write(MIMETYPE);
-            out.closeEntry();
+        }
 
-            out.setMethod(ZipOutputStream.DEFLATED);
-            out.setLevel(9);
-
-            out.putNextEntry(new ZipEntry("META-INF/container.xml"));
-            writeDocument(containerDocument, out);
-            out.closeEntry();
-
-            out.putNextEntry(new ZipEntry("item/standard.opf"));
-            writeDocument(packageDocument, out);
-            out.closeEntry();
-
-            out.putNextEntry(new ZipEntry("item/navigation-documents.xhtml"));
-            writePage(navigationDocument, out);
-            out.closeEntry();
-
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            for (String style : styles) {
-                ZipEntry zipEntry =
-                        new ZipEntry("item/style/" + style + ".css");
-                out.putNextEntry(zipEntry);
-
-                try (InputStream in =
-                        loader.getResourceAsStream(style + ".css")) {
-                    ByteStreams.copy(in, out);
-                }
-
-                out.closeEntry();
-            }
-
-            for (Map.Entry<String, Path> entry : images.entrySet()) {
-                String name = entry.getValue().getFileName().toString();
-                String extension = name.substring(name.lastIndexOf('.'));
-
-                ZipEntry zipEntry =
-                        new ZipEntry("item/image/" + entry.getKey() + extension);
-                out.putNextEntry(zipEntry);
-
-                try (BufferedInputStream in =
-                        new BufferedInputStream(Files.newInputStream(entry
-                                .getValue()))) {
-                    ByteStreams.copy(in, out);
-                }
-
-                out.closeEntry();
-            }
-
-            for (Map.Entry<String, Document> entry : pages.entrySet()) {
-                ZipEntry zipEntry =
-                        new ZipEntry("item/xhtml/" + entry.getKey() + ".xhtml");
-                out.putNextEntry(zipEntry);
-
-                writePage(entry.getValue(), out);
-
-                out.closeEntry();
-            }
-        } catch (TransformerException e) {
-            throw new IOException(e);
+        URI uri = URI.create("jar:" + path.toUri());
+        try (FileSystem fileSystem =
+                FileSystems.newFileSystem(uri, Collections.emptyMap())) {
+            saveTo(fileSystem.getPath("/"));
         }
     }
 
@@ -400,18 +346,24 @@ public class EPubBuilder {
     public void saveToDirectory(Path path) throws IOException {
         Path basePath = Files.createDirectories(path);
 
-        try (BufferedOutputStream out =
-                new BufferedOutputStream(Files.newOutputStream(basePath
-                        .resolve("mimetype")))) {
+        try (OutputStream out =
+                Files.newOutputStream(basePath.resolve("mimetype"))) {
             out.write(MIMETYPE);
         }
 
+        saveTo(basePath);
+    }
+
+    /**
+     * @param path
+     * @throws IOException
+     */
+    private void saveTo(Path basePath) throws IOException {
         Path metaInfPath =
                 Files.createDirectories(basePath.resolve("META-INF"));
 
-        try (BufferedOutputStream out =
-                new BufferedOutputStream(Files.newOutputStream(metaInfPath
-                        .resolve("container.xml")))) {
+        try (OutputStream out =
+                Files.newOutputStream(metaInfPath.resolve("container.xml"))) {
             writeDocument(containerDocument, out);
         } catch (TransformerException e) {
             throw new IOException(e);
@@ -419,17 +371,16 @@ public class EPubBuilder {
 
         Path itemPath = Files.createDirectories(basePath.resolve("item"));
 
-        try (BufferedOutputStream out =
-                new BufferedOutputStream(Files.newOutputStream(itemPath
-                        .resolve("standard.opf")))) {
+        try (OutputStream out =
+                Files.newOutputStream(itemPath.resolve("standard.opf"))) {
             writeDocument(packageDocument, out);
         } catch (TransformerException e) {
             throw new IOException(e);
         }
 
-        try (BufferedOutputStream out =
-                new BufferedOutputStream(Files.newOutputStream(itemPath
-                        .resolve("navigation-documents.xhtml")))) {
+        try (OutputStream out =
+                Files.newOutputStream(itemPath
+                        .resolve("navigation-documents.xhtml"))) {
             writePage(navigationDocument, out);
         } catch (TransformerException e) {
             throw new IOException(e);
@@ -439,12 +390,9 @@ public class EPubBuilder {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
 
         for (String style : styles) {
-            try (InputStream in = loader.getResourceAsStream(style + ".css");
-                    BufferedOutputStream out =
-                            new BufferedOutputStream(
-                                    Files.newOutputStream(stylePath
-                                            .resolve(style + ".css")))) {
-                ByteStreams.copy(in, out);
+            try (InputStream in = loader.getResourceAsStream(style + ".css")) {
+                Files.copy(in, stylePath.resolve(style + ".css"),
+                        StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
@@ -454,23 +402,18 @@ public class EPubBuilder {
             String name = entry.getValue().getFileName().toString();
             String extension = name.substring(name.lastIndexOf('.'));
 
-            try (BufferedInputStream in =
-                    new BufferedInputStream(Files.newInputStream(entry
-                            .getValue()));
-                    BufferedOutputStream out =
-                            new BufferedOutputStream(
-                                    Files.newOutputStream(imagePath
-                                            .resolve(entry.getKey() + extension)))) {
-                ByteStreams.copy(in, out);
+            try (InputStream in = Files.newInputStream(entry.getValue())) {
+                Files.copy(in, imagePath.resolve(entry.getKey() + extension),
+                        StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
         Path xhtmlPath = Files.createDirectories(itemPath.resolve("xhtml"));
 
         for (Map.Entry<String, Document> entry : pages.entrySet()) {
-            try (BufferedOutputStream out =
-                    new BufferedOutputStream(Files.newOutputStream(xhtmlPath
-                            .resolve(entry.getKey() + ".xhtml")))) {
+            try (OutputStream out =
+                    Files.newOutputStream(xhtmlPath.resolve(entry.getKey() +
+                            ".xhtml"))) {
                 writePage(entry.getValue(), out);
             } catch (TransformerException e) {
                 throw new IOException(e);
