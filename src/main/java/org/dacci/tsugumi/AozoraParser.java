@@ -30,11 +30,16 @@ import org.dacci.tsugumi.doc.Paragraph;
 import org.dacci.tsugumi.doc.Ruby;
 import org.dacci.tsugumi.doc.Section;
 import org.dacci.tsugumi.doc.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author dacci
  */
 public class AozoraParser implements Closeable {
+
+    private static final Logger log = LoggerFactory
+            .getLogger(AozoraParser.class);
 
     private static final Pattern TAG_PATTERN = Pattern.compile("［＃(.+?)］");
 
@@ -199,7 +204,7 @@ public class AozoraParser implements Closeable {
                 int amount = parseInt(type, 0, type.length() - 3) / 2;
                 paragraph.setStyle("start-" + amount + "em");
             } else {
-                System.err.println("unsupported tag: " + type);
+                log.warn("Unsupported block: {}", type);
             }
 
             return;
@@ -244,7 +249,7 @@ public class AozoraParser implements Closeable {
             return;
         }
 
-        System.err.println("unsupported tag: " + line);
+        log.warn("Unsupported tag: {}", line);
 
         if (!line.isEmpty()) {
             page.addParagraph().addElement(new Text(line));
@@ -316,7 +321,7 @@ public class AozoraParser implements Closeable {
                                     matcher.end(2) - 7) * 10;
                     text.setStyle(String.format("font-%03dper", amount));
                 } else {
-                    System.err.println("unknown annotation: " + type);
+                    log.warn("Unknown annotation: {}", type);
                 }
             }
 

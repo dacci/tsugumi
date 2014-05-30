@@ -418,8 +418,6 @@ public class EPubBuilder {
         try (BufferedInputStream in =
                 new BufferedInputStream(Files.newInputStream(image.getPath()))) {
             ByteStreams.copy(in, zipStream);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         zipStream.closeEntry();
