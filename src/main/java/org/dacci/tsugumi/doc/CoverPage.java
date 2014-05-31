@@ -19,33 +19,22 @@ public class CoverPage extends Page {
      * @param book
      */
     CoverPage(Book book) {
-        super("p-cover", book);
+        super(book);
+
+        setId("p-cover");
+        setStyle("p-cover");
+        setTitle("表紙");
+
+        Image image = new Image(book.getCoverImage());
+        getParagraph().addParagraph().addElement(image);
     }
 
     @Override
     public Document generate(DocumentBuilder builder) {
-        Document document = newDocument(builder);
+        Document document = super.generate(builder);
 
-        Element body = document.createElement("body");
-        body.setAttribute("class", "p-cover");
-        document.getDocumentElement().appendChild(body);
-
-        Element div = document.createElement("div");
-        div.setAttribute("class", "main");
-        body.appendChild(div);
-
-        Element p = document.createElement("p");
-        div.appendChild(p);
-
-        Image image = getBook().getCoverImage();
-        String src =
-                String.format("../image/%s.%s", image.getId(),
-                        image.getExtension());
-
-        Element img = document.createElement("img");
+        Element img = (Element) document.getElementsByTagName("img").item(0);
         img.setAttribute("class", "fit");
-        img.setAttribute("src", src);
-        p.appendChild(img);
 
         return document;
     }

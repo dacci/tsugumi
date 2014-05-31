@@ -83,7 +83,7 @@ public class Paragraph implements Section {
     }
 
     @Override
-    public Node generate(Document document) {
+    public Node generate(Page page, Document document) {
         Element paragraph = document.createElement(block ? "div" : "p");
 
         if (style != null && !style.isEmpty()) {
@@ -94,7 +94,7 @@ public class Paragraph implements Section {
             paragraph.appendChild(document.createElement("br"));
         } else {
             for (Section element : elements) {
-                paragraph.appendChild(element.generate(document));
+                paragraph.appendChild(element.generate(page, document));
             }
         }
 

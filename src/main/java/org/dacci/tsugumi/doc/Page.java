@@ -12,25 +12,28 @@ import org.w3c.dom.Element;
 /**
  * @author dacci
  */
-public class Page extends Paragraph {
-
-    private final String id;
+public class Page extends Item {
 
     private final Book book;
+
+    private String title;
+
+    private String style;
+
+    private final Paragraph paragraph = new Paragraph();
 
     /**
      * @param book
      */
-    Page(String id, Book book) {
-        this.id = id;
+    Page(Book book) {
         this.book = book;
+
+        style = "p-text";
     }
 
-    /**
-     * @return the id
-     */
-    public String getId() {
-        return id;
+    @Override
+    public String getMediaType() {
+        return "application/xhtml+xml";
     }
 
     /**
@@ -41,6 +44,47 @@ public class Page extends Paragraph {
     }
 
     /**
+     * @return the title
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
+     * @param title
+     *            the title to set
+     */
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    /**
+     * @return the style
+     */
+    public String getStyle() {
+        return style;
+    }
+
+    /**
+     * @param style
+     *            the style to set
+     */
+    public void setStyle(String style) {
+        if (style == null) {
+            throw new NullPointerException();
+        }
+
+        this.style = style;
+    }
+
+    /**
+     * @return the paragraph
+     */
+    public Paragraph getParagraph() {
+        return paragraph;
+    }
+
+    /**
      * @param builder
      * @return
      */
@@ -48,10 +92,10 @@ public class Page extends Paragraph {
         Document document = newDocument(builder);
 
         Element body = document.createElement("body");
-        body.setAttribute("class", "p-text");
+        body.setAttribute("class", style);
         document.getDocumentElement().appendChild(body);
 
-        Element div = (Element) generate(document);
+        Element div = (Element) paragraph.generate(this, document);
         div.setAttribute("class", "main");
         body.appendChild(div);
 

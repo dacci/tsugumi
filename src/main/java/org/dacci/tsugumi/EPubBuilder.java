@@ -13,16 +13,17 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.Consumer;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -38,8 +39,11 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.dacci.tsugumi.doc.Book;
-import org.dacci.tsugumi.doc.Image;
+import org.dacci.tsugumi.doc.ImageItem;
+import org.dacci.tsugumi.doc.Item;
 import org.dacci.tsugumi.doc.Page;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -48,6 +52,9 @@ import org.w3c.dom.Element;
  */
 public class EPubBuilder {
 
+    private static final Logger log = LoggerFactory
+            .getLogger(EPubBuilder.class);
+
     private static final byte[] MIMETYPE = "application/epub+zip"
             .getBytes(StandardCharsets.UTF_8);
 
@@ -55,6 +62,17 @@ public class EPubBuilder {
 
     private static final byte[] LINE_SEPARATOR = System.getProperty(
             "line.separator").getBytes();
+
+    private static final Path ROOT_PATH = Paths.get(".");
+
+    private static final Path ITEM_PATH = ROOT_PATH.resolve("item");
+
+    @SuppressWarnings("unused")
+    private static final Path STYLE_PATH = ITEM_PATH.resolve("style");
+
+    private static final Path IMAGE_PATH = ITEM_PATH.resolve("image");
+
+    private static final Path XHTML_PATH = ITEM_PATH.resolve("xhtml");
 
     private static final Collection<String> styles;
 
@@ -73,9 +91,9 @@ public class EPubBuilder {
 
     private Transformer transformer;
 
-    private final Map<String, Path> images = new TreeMap<>();
+    private final Collection<ImageItem> images = new LinkedHashSet<>();
 
-    private final Map<String, Document> pages = new TreeMap<>();
+    private final Map<String, Document> pages = new LinkedHashMap<>();
 
     private Document containerDocument;
 
@@ -110,29 +128,55 @@ public class EPubBuilder {
         images.clear();
         pages.clear();
 
-        // images
-        Consumer<Image> imageAdder = (Image image) -> {
-            images.put(image.getId(), image.getPath());
-        };
-
         if (book.hasCoverImage()) {
-            imageAdder.accept(book.getCoverImage());
+            book.getCoverImage().setId("cover");
         }
 
-        book.getImages().forEach(imageAdder);
+        int imageIndex = 0;
+        for (Item item : book.getItems()) {
+            if (!(item instanceof ImageItem)) {
+                continue;
+            }
 
-        // pages
-        Consumer<Page> pageAdder = (Page page) -> {
+            ImageItem image = (ImageItem) item;
+
+            if (image.getId() == null) {
+                image.setId(String.format("img-%03d", ++imageIndex));
+            }
+
+            item.setPath(IMAGE_PATH.resolve(image.getId() + "." +
+                    image.getExtension()));
+
+            images.add(image);
+        }
+
+        int pageIndex = 0;
+        for (Item item : book.getItems()) {
+            if (!(item instanceof Page)) {
+                continue;
+            }
+
+            Page page = (Page) item;
+
+            if (page.getId() == null) {
+                page.setId(String.format("p-%03d", ++pageIndex));
+            }
+
+            page.setPath(XHTML_PATH.resolve(page.getId() + ".xhtml"));
+        }
+
+        for (Item item : book.getItems()) {
+            if (!(item instanceof Page)) {
+                continue;
+            }
+
+            Page page = (Page) item;
+
+            log.debug("Building {}", page.getHref(ROOT_PATH));
+
             Document document = page.generate(builder);
-            pages.put(page.getId(), document);
-        };
-
-        if (book.hasCoverImage()) {
-            Page page = book.getCoverPage();
-            pageAdder.accept(page);
+            pages.put(page.getHref(ROOT_PATH), document);
         }
-
-        book.getPages().forEach(pageAdder);
 
         containerDocument = buildContainer();
         packageDocument = buildPackage(book);
@@ -233,35 +277,25 @@ public class EPubBuilder {
             manifest.appendChild(item);
         }
 
-        for (Map.Entry<String, Path> entry : images.entrySet()) {
-            String id = entry.getKey();
-            String name = entry.getValue().getFileName().toString();
-            String extension = name.substring(name.lastIndexOf('.') + 1);
+        for (Item item : book.getItems()) {
+            element = document.createElement("item");
+            element.setAttribute("id", item.getId());
+            element.setAttribute("media-type", item.getMediaType());
+            element.setAttribute("href", item.getHref(ITEM_PATH));
 
-            Element item = document.createElement("item");
-            item.setAttribute("media-type", Image.getContentType(extension));
-            item.setAttribute("id", id);
-            item.setAttribute("href", "image/" + id + "." + extension);
-
-            if (id.equals("cover")) {
-                item.setAttribute("properties", "cover-image");
+            if (item instanceof ImageItem && item.getId().equals("cover")) {
+                element.setAttribute("properties", "cover-image");
             }
 
-            manifest.appendChild(item);
-        }
+            manifest.appendChild(element);
 
-        for (String page : pages.keySet()) {
-            Element item = document.createElement("item");
-            item.setAttribute("media-type", "application/xhtml+xml");
-            item.setAttribute("id", page);
-            item.setAttribute("href", "xhtml/" + page + ".xhtml");
-            manifest.appendChild(item);
-
-            Element itemref = document.createElement("itemref");
-            itemref.setAttribute("linear", "yes");
-            itemref.setAttribute("idref", page);
-            itemref.setAttribute("properties", "page-spread-left");
-            spine.appendChild(itemref);
+            if (item instanceof Page) {
+                element = document.createElement("itemref");
+                element.setAttribute("linear", "yes");
+                element.setAttribute("idref", item.getId());
+                element.setAttribute("properties", "page-spread-left");
+                spine.appendChild(element);
+            }
         }
 
         return document;
@@ -298,17 +332,21 @@ public class EPubBuilder {
         Element ol = document.createElement("ol");
         nav.appendChild(ol);
 
-        if (book.hasCoverImage()) {
+        for (Item item : book.getItems()) {
+            if (!(item instanceof Page)) {
+                continue;
+            }
+
+            Page page = (Page) item;
+            if (page.getTitle() == null) {
+                continue;
+            }
+
             Element a = document.createElement("a");
-            a.setAttribute("href", "xhtml/p-cover.xhtml");
-            a.appendChild(document.createTextNode("表紙"));
+            a.setAttribute("href", page.getHref(ITEM_PATH));
+            a.appendChild(document.createTextNode(page.getTitle()));
             ol.appendChild(document.createElement("li")).appendChild(a);
         }
-
-        Element a = document.createElement("a");
-        a.setAttribute("href", "xhtml/p-toc.xhtml");
-        a.appendChild(document.createTextNode("目次"));
-        ol.appendChild(document.createElement("li")).appendChild(a);
 
         return document;
     }
@@ -396,24 +434,21 @@ public class EPubBuilder {
             }
         }
 
-        Path imagePath = Files.createDirectories(itemPath.resolve("image"));
+        Files.createDirectories(itemPath.resolve("image"));
 
-        for (Map.Entry<String, Path> entry : images.entrySet()) {
-            String name = entry.getValue().getFileName().toString();
-            String extension = name.substring(name.lastIndexOf('.'));
-
-            try (InputStream in = Files.newInputStream(entry.getValue())) {
-                Files.copy(in, imagePath.resolve(entry.getKey() + extension),
+        for (ImageItem image : images) {
+            try (InputStream in = Files.newInputStream(image.getSource())) {
+                Files.copy(image.getSource(),
+                        basePath.resolve(image.getPath().toString()),
                         StandardCopyOption.REPLACE_EXISTING);
             }
         }
 
-        Path xhtmlPath = Files.createDirectories(itemPath.resolve("xhtml"));
+        Files.createDirectories(itemPath.resolve("xhtml"));
 
         for (Map.Entry<String, Document> entry : pages.entrySet()) {
             try (OutputStream out =
-                    Files.newOutputStream(xhtmlPath.resolve(entry.getKey() +
-                            ".xhtml"))) {
+                    Files.newOutputStream(basePath.resolve(entry.getKey()))) {
                 writePage(entry.getValue(), out);
             } catch (TransformerException e) {
                 throw new IOException(e);

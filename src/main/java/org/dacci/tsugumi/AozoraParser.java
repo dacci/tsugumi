@@ -6,7 +6,6 @@ package org.dacci.tsugumi;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.Character.UnicodeBlock;
 import java.nio.charset.Charset;
@@ -25,6 +24,7 @@ import java.util.regex.Pattern;
 
 import org.dacci.tsugumi.doc.Book;
 import org.dacci.tsugumi.doc.Image;
+import org.dacci.tsugumi.doc.ImageItem;
 import org.dacci.tsugumi.doc.Page;
 import org.dacci.tsugumi.doc.Paragraph;
 import org.dacci.tsugumi.doc.Ruby;
@@ -53,12 +53,15 @@ public class AozoraParser implements Closeable {
             .compile("ここで(.+)終わり");
 
     private static final Pattern IMAGE_TAG_PATTERN = Pattern
-            .compile("(.*)（(.+)(、縦(\\d+)×横(\\d+))?）(入る)?");
+            .compile("(.*)（(.+)(?:、縦(\\d+)×横(\\d+))?）(入る)?");
+
+    private static final Pattern META_DATA_PATTERN = Pattern
+            .compile("(.+?)＝(.+)");
 
     private static final Pattern RUBY_PATTERN = Pattern
             .compile("(?:｜(.+?))?《(.+?)》");
 
-    private final Path source;
+    private final Book book;
 
     private final BufferedReader reader;
 
@@ -68,18 +71,13 @@ public class AozoraParser implements Closeable {
 
     private Deque<Paragraph> context = new LinkedList<>();
 
-    private Book book = new Book();
-
     private Page page;
-
-    private boolean imageFound = false;
 
     /**
      * @throws IOException
      */
     public AozoraParser(Path file) throws IOException {
-        source = file;
-
+        book = new Book(file.resolveSibling(""));
         reader = Files.newBufferedReader(file, Charset.forName("MS932"));
     }
 
@@ -138,7 +136,8 @@ public class AozoraParser implements Closeable {
 
             stack.clear();
             context.clear();
-            context.push(page = book.addPage());
+            page = book.addPage();
+            context.push(page.getParagraph());
 
             while ((line = reader.readLine()) != null) {
                 ++row;
@@ -172,7 +171,8 @@ public class AozoraParser implements Closeable {
         case "改ページ":
             stack.clear();
             context.clear();
-            context.push(page = book.addPage());
+            page = book.addPage();
+            context.push(page.getParagraph());
             return;
 
         case "小見出し":
@@ -226,24 +226,50 @@ public class AozoraParser implements Closeable {
 
         matcher = IMAGE_TAG_PATTERN.matcher(tag);
         if (matcher.matches()) {
-            Path path = source.resolveSibling(matcher.group(2));
-            if (!Files.exists(path)) {
-                throw new ParserException(new FileNotFoundException(
-                        path.toString()));
+            String caption = matcher.group(1);
+            ImageItem imageItem = book.importImage(matcher.group(2));
+
+            if (caption != null) {
+                switch (caption) {
+                case "表紙":
+                    book.setCoverImage(imageItem);
+                    return;
+                }
             }
 
-            if (imageFound) {
-                Image image = book.createImage(path);
+            Image image = new Image(imageItem);
+            image.setCaption(caption);
 
-                if (matcher.start(1) > 0) {
-                    image.setCaption(matcher.group(1));
+            if (matcher.start(3) > 0) {
+                image.setWidth(Integer.parseInt(matcher.group(3)));
+            }
+
+            if (matcher.start(4) > 0) {
+                image.setHeight(Integer.parseInt(matcher.group(4)));
+            }
+
+            context.peek().addParagraph().addElement(image);
+
+            return;
+        }
+
+        matcher = META_DATA_PATTERN.matcher(tag);
+        if (matcher.matches()) {
+            String key = matcher.group(1);
+            String value = matcher.group(2);
+
+            switch (key) {
+            case "タイトル":
+                page.setTitle(value);
+
+                if (value.equals("目次")) {
+                    page.setId("p-toc");
+                    book.setTocPage(page);
                 }
+                break;
 
-                page.addParagraph().addElement(image);
-            } else {
-                imageFound = true;
-
-                book.setCoverImage(path);
+            default:
+                log.warn("Unknown key: {}", key);
             }
 
             return;
@@ -252,7 +278,7 @@ public class AozoraParser implements Closeable {
         log.warn("Unsupported tag: {}", line);
 
         if (!line.isEmpty()) {
-            page.addParagraph().addElement(new Text(line));
+            context.peek().addParagraph().addElement(new Text(line));
         }
     }
 
@@ -308,6 +334,10 @@ public class AozoraParser implements Closeable {
 
             case "傍点":
                 text.setStyle("em-sesame");
+                break;
+
+            case "リンク":
+                text.setLink(text.getText());
                 break;
 
             default:

@@ -20,11 +20,11 @@ public class Caption extends Paragraph {
     }
 
     @Override
-    public Node generate(Document document) {
+    public Node generate(Page page, Document document) {
         Element caption = document.createElement("h3");
 
         for (Section element : getElements()) {
-            caption.appendChild(element.generate(document));
+            caption.appendChild(element.generate(page, document));
         }
 
         return caption;

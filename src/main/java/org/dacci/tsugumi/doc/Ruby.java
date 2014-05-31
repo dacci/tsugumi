@@ -63,7 +63,7 @@ public class Ruby implements Section {
     }
 
     @Override
-    public Node generate(Document document) {
+    public Node generate(Page page, Document document) {
         Element element = document.createElement("ruby");
         element.appendChild(document.createTextNode(text));
 

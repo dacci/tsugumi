@@ -4,8 +4,6 @@
 
 package org.dacci.tsugumi.doc;
 
-import java.nio.file.Path;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -15,25 +13,7 @@ import org.w3c.dom.Node;
  */
 public class Image implements Section {
 
-    public static String getContentType(String extension) {
-        switch (extension) {
-        case "png":
-            return "image/png";
-
-        case "jpg":
-        case "jpeg":
-            return "image/jpeg";
-
-        default:
-            return "application/octet-stream";
-        }
-    }
-
-    private final Path path;
-
-    private final String id;
-
-    private final String extension;
+    private ImageItem item;
 
     private String caption;
 
@@ -41,22 +21,23 @@ public class Image implements Section {
 
     private int height;
 
-    /**
-     * @param path
-     */
-    Image(Path path, String id) {
-        this.path = path;
-        this.id = id;
-
-        String name = path.getFileName().toString().toLowerCase();
-        extension = name.substring(name.lastIndexOf('.') + 1);
+    public Image(ImageItem item) {
+        this.item = item;
     }
 
     /**
-     * @return the path
+     * @return the item
      */
-    public Path getPath() {
-        return path;
+    public ImageItem getItem() {
+        return item;
+    }
+
+    /**
+     * @param item
+     *            the item to set
+     */
+    public void setItem(ImageItem item) {
+        this.item = item;
     }
 
     /**
@@ -104,25 +85,11 @@ public class Image implements Section {
         this.height = height;
     }
 
-    /**
-     * @return the id
-     */
-    public String getId() {
-        return id;
-    }
-
-    /**
-     * @return the extension
-     */
-    public String getExtension() {
-        return extension;
-    }
-
     @Override
-    public Node generate(Document document) {
+    public Node generate(Page page, Document document) {
         Element element = document.createElement("img");
-        element.setAttribute("src",
-                String.format("../image/%s.%s", id, extension));
+        element.setAttribute("src", item.getHref(page.getPath().getParent())
+                .toString());
 
         if (caption != null && !caption.isEmpty()) {
             element.setAttribute("alt", caption);
@@ -148,7 +115,7 @@ public class Image implements Section {
             builder.append(caption);
         }
 
-        builder.append("（").append(path);
+        builder.append("（").append(item);
 
         if (width > 0 || height > 0) {
             builder.append("、縦").append(width).append("×横").append(width);

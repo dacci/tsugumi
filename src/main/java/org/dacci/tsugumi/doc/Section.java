@@ -16,5 +16,5 @@ public interface Section {
      * @param document
      * @return
      */
-    Node generate(Document document);
+    Node generate(Page page, Document document);
 }

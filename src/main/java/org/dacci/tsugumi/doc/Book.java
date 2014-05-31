@@ -7,13 +7,18 @@ package org.dacci.tsugumi.doc;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
  * @author dacci
  */
 public class Book {
+
+    private final Path basePath;
 
     private String title;
 
@@ -27,19 +32,21 @@ public class Book {
 
     private String translator;
 
-    private final List<Page> pages = new ArrayList<>();
+    private final List<Item> items = new ArrayList<>();
 
-    private final List<Image> images = new ArrayList<>();
+    private final Map<Path, ImageItem> images = new HashMap<>();
 
-    private Image coverImage;
+    private ImageItem coverImage;
 
     private CoverPage coverPage;
 
+    private Page tocPage;
+
     /**
-     * 
+     * @param basePath
      */
-    public Book() {
-        pages.add(new TocPage(this));
+    public Book(Path basePath) {
+        this.basePath = basePath;
     }
 
     /**
@@ -133,40 +140,37 @@ public class Book {
     }
 
     /**
-     * @return the pages
+     * @return the items
      */
-    public List<Page> getPages() {
-        return pages;
+    public Collection<Item> getItems() {
+        return items;
+    }
+
+    /**
+     * @param path
+     * @return
+     * @throws ClassCastException
+     */
+    public ImageItem importImage(String path) {
+        Path target = basePath.resolve(path);
+
+        if (!images.containsKey(target)) {
+            ImageItem item = new ImageItem(target);
+            items.add(item);
+            images.put(target, item);
+        }
+
+        return (ImageItem) images.get(target);
     }
 
     /**
      * @return
      */
     public Page addPage() {
-        String id = String.format("p-%03d", pages.size());
-        Page page = new Page(id, this);
-        pages.add(page);
+        Page page = new Page(this);
+        items.add(page);
 
         return page;
-    }
-
-    /**
-     * @return the images
-     */
-    public List<Image> getImages() {
-        return images;
-    }
-
-    /**
-     * @param path
-     * @return
-     */
-    public Image createImage(Path path) {
-        String id = String.format("img-%03d", images.size());
-        Image image = new Image(path, id);
-        images.add(image);
-
-        return image;
     }
 
     /**
@@ -179,7 +183,7 @@ public class Book {
     /**
      * @return the coverImage
      */
-    public Image getCoverImage() {
+    public ImageItem getCoverImage() {
         return coverImage;
     }
 
@@ -187,18 +191,12 @@ public class Book {
      * @param coverImage
      *            the coverImage to set
      */
-    public void setCoverImage(Image coverImage) {
+    public void setCoverImage(ImageItem coverImage) {
         this.coverImage = coverImage;
-    }
-
-    /**
-     * @param path
-     */
-    public void setCoverImage(Path path) {
-        coverImage = new Image(path, "cover");
 
         if (coverPage == null) {
             coverPage = new CoverPage(this);
+            items.add(0, coverPage);
         }
     }
 
@@ -207,6 +205,21 @@ public class Book {
      */
     public CoverPage getCoverPage() {
         return coverPage;
+    }
+
+    /**
+     * @return the tocPage
+     */
+    public Page getTocPage() {
+        return tocPage;
+    }
+
+    /**
+     * @param tocPage
+     *            the tocPage to set
+     */
+    public void setTocPage(Page tocPage) {
+        this.tocPage = tocPage;
     }
 
     /**

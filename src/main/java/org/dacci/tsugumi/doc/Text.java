@@ -17,6 +17,8 @@ public class Text implements Section {
 
     private String style;
 
+    private String link;
+
     /**
      * @param text
      */
@@ -54,14 +56,55 @@ public class Text implements Section {
         this.style = style;
     }
 
+    /**
+     * @return the link
+     */
+    public String getLink() {
+        return link;
+    }
+
+    /**
+     * @param link
+     *            the link to set
+     */
+    public void setLink(String link) {
+        this.link = link;
+    }
+
     @Override
-    public Node generate(Document document) {
-        if (style == null || style.isEmpty()) {
-            return document.createTextNode(text);
-        } else {
-            Element element = document.createElement("span");
+    public Node generate(Page page, Document document) {
+        Element element = null;
+
+        if (link != null) {
+            Item target = null;
+            for (Item item : page.getBook().getItems()) {
+                if (item instanceof Page &&
+                        link.equals(((Page) item).getTitle())) {
+                    target = item;
+                    break;
+                }
+            }
+
+            if (target != null) {
+                element = document.createElement("a");
+                element.setAttribute("href",
+                        target.getHref(page.getPath().getParent()).toString());
+            }
+        }
+
+        if (style != null) {
+            if (element == null) {
+                element = document.createElement("span");
+            }
+
             element.setAttribute("class", style);
-            element.appendChild(document.createTextNode(text));
+        }
+
+        Node textNode = document.createTextNode(text);
+        if (element == null) {
+            return textNode;
+        } else {
+            element.appendChild(textNode);
             return element;
         }
     }
