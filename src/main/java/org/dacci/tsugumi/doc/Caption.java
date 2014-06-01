@@ -13,15 +13,32 @@ import org.w3c.dom.Node;
  */
 public class Caption extends Paragraph {
 
+    private int level = 2;
+
     /**
      * 
      */
     Caption() {
     }
 
+    /**
+     * @return the level
+     */
+    public int getLevel() {
+        return level;
+    }
+
+    /**
+     * @param level
+     *            the level to set
+     */
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
     @Override
     public Node generate(Page page, Document document) {
-        Element caption = document.createElement("h3");
+        Element caption = document.createElement("h" + level);
 
         for (Section element : getElements()) {
             caption.appendChild(element.generate(page, document));

@@ -23,6 +23,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.dacci.tsugumi.doc.Book;
+import org.dacci.tsugumi.doc.Caption;
 import org.dacci.tsugumi.doc.Image;
 import org.dacci.tsugumi.doc.ImageItem;
 import org.dacci.tsugumi.doc.Page;
@@ -175,8 +176,25 @@ public class AozoraParser implements Closeable {
             context.push(page.getParagraph());
             return;
 
+        case "大見出し":
+        case "中見出し":
         case "小見出し":
-            context.push(context.peek().addCaption());
+            Caption caption = context.peek().addCaption();
+            switch (tag.charAt(0)) {
+            case '大':
+                caption.setLevel(1);
+                break;
+
+            case '中':
+                caption.setLevel(2);
+                break;
+
+            case '小':
+                caption.setLevel(3);
+                break;
+            }
+
+            context.push(caption);
             parseLine(line.substring(tagMatcher.end()));
             context.pop();
             return;
@@ -185,6 +203,7 @@ public class AozoraParser implements Closeable {
             context.push(context.peek().addParagraph());
             context.peek().setStyle("align-end");
             parseLine(line.substring(tagMatcher.end()));
+            context.pop();
             return;
         }
 
