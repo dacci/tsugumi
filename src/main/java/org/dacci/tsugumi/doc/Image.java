@@ -21,6 +21,8 @@ public class Image implements Section {
 
     private int height;
 
+    private String style = "fit";
+
     public Image(ImageItem item) {
         this.item = item;
     }
@@ -85,6 +87,21 @@ public class Image implements Section {
         this.height = height;
     }
 
+    /**
+     * @return the style
+     */
+    public String getStyle() {
+        return style;
+    }
+
+    /**
+     * @param style
+     *            the style to set
+     */
+    public void setStyle(String style) {
+        this.style = style;
+    }
+
     @Override
     public Node generate(Page page, Document document) {
         Element element = document.createElement("img");
@@ -102,6 +119,10 @@ public class Image implements Section {
 
         if (height > 0) {
             element.setAttribute("height", Integer.toString(height));
+        }
+
+        if (style != null) {
+            element.setAttribute("class", style);
         }
 
         return element;
