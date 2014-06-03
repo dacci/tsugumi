@@ -11,31 +11,23 @@ import org.w3c.dom.Node;
 /**
  * @author dacci
  */
-public class Ruby implements Section {
+public class Ruby implements PageElement {
 
-    private String text;
+    private PageElement text;
 
-    private String ruby;
-
-    /**
-     * 
-     */
-    public Ruby() {
-    }
+    private PageElement ruby;
 
     /**
-     * @param text
-     * @param ruby
+     * @param string
      */
-    public Ruby(String text, String ruby) {
-        this.text = text;
+    public Ruby(PageElement ruby) {
         this.ruby = ruby;
     }
 
     /**
      * @return the text
      */
-    public String getText() {
+    public PageElement getText() {
         return text;
     }
 
@@ -43,14 +35,14 @@ public class Ruby implements Section {
      * @param text
      *            the text to set
      */
-    public void setText(String text) {
+    public void setText(PageElement text) {
         this.text = text;
     }
 
     /**
      * @return the ruby
      */
-    public String getRuby() {
+    public PageElement getRuby() {
         return ruby;
     }
 
@@ -58,27 +50,46 @@ public class Ruby implements Section {
      * @param ruby
      *            the ruby to set
      */
-    public void setRuby(String ruby) {
+    public void setRuby(PageElement ruby) {
         this.ruby = ruby;
     }
 
     @Override
-    public Node generate(Page page, Document document) {
-        Element element = document.createElement("ruby");
-        element.appendChild(document.createTextNode(text));
+    public int length() {
+        return text.length();
+    }
 
-        element.appendChild(document.createElement("rp")).appendChild(
-                document.createTextNode("("));
-        element.appendChild(document.createElement("rt")).appendChild(
-                document.createTextNode(ruby));
-        element.appendChild(document.createElement("rp")).appendChild(
-                document.createTextNode(")"));
+    @Override
+    public char charAt(int index) {
+        return text.charAt(index);
+    }
 
-        return element;
+    @Override
+    public PageElement subSequence(int start, int end) {
+        if (start != 0 || end - start != length()) {
+            throw new UnsupportedOperationException();
+        }
+
+        return this;
     }
 
     @Override
     public String toString() {
-        return String.format("｜%s《%s》", text, ruby);
+        return "Ruby[" + text + '=' + ruby + ']';
+    }
+
+    @Override
+    public Node build(Document document) {
+        Element element = document.createElement("ruby");
+        element.appendChild(text.build(document));
+
+        element.appendChild(document.createElement("rp")).appendChild(
+                document.createTextNode("("));
+        element.appendChild(document.createElement("rt")).appendChild(
+                ruby.build(document));
+        element.appendChild(document.createElement("rp")).appendChild(
+                document.createTextNode(")"));
+
+        return element;
     }
 }

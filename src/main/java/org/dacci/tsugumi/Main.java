@@ -24,6 +24,9 @@ public final class Main {
 
     private static final Logger log = LoggerFactory.getLogger(Main.class);
 
+    /**
+     * @param args
+     */
     public static void main(String[] args) {
         Options options = new Options();
         options.addOption("d", "directory", false, "Save as directory.");
@@ -36,8 +39,11 @@ public final class Main {
         }
     }
 
+    /**
+     * @param commandLine
+     */
     @SuppressWarnings("unchecked")
-    public static void main(CommandLine commandLine) {
+    private static void main(CommandLine commandLine) {
         for (String arg : (List<String>) commandLine.getArgList()) {
             Path path = Paths.get(arg);
             Book book = null;

@@ -4,50 +4,34 @@
 
 package org.dacci.tsugumi.doc;
 
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * @author dacci
  */
 public class Book {
 
-    private final Path basePath;
+    private final Collection<Chapter> chapters = new ArrayList<>();
+
+    private final Map<Path, Resource> resources = new LinkedHashMap<>();
 
     private String title;
 
     private String originalTitle;
 
-    private String subTitle;
+    private String subtitle;
 
-    private String originalSubTitle;
+    private String originalSubtitle;
 
     private String author;
 
     private String translator;
 
-    private final List<Item> items = new ArrayList<>();
-
-    private final Map<Path, ImageItem> images = new HashMap<>();
-
-    private ImageItem coverImage;
-
-    private CoverPage coverPage;
-
-    private Page tocPage;
-
-    /**
-     * @param basePath
-     */
-    public Book(Path basePath) {
-        this.basePath = basePath;
-    }
+    private Image coverImage;
 
     /**
      * @return the title
@@ -80,33 +64,33 @@ public class Book {
     }
 
     /**
-     * @return the subTitle
+     * @return the subtitle
      */
-    public String getSubTitle() {
-        return subTitle;
+    public String getSubtitle() {
+        return subtitle;
     }
 
     /**
-     * @param subTitle
-     *            the subTitle to set
+     * @param subtitle
+     *            the subtitle to set
      */
-    public void setSubTitle(String subTitle) {
-        this.subTitle = subTitle;
+    public void setSubtitle(String subtitle) {
+        this.subtitle = subtitle;
     }
 
     /**
-     * @return the originalSubTitle
+     * @return the originalSubtitle
      */
-    public String getOriginalSubTitle() {
-        return originalSubTitle;
+    public String getOriginalSubtitle() {
+        return originalSubtitle;
     }
 
     /**
-     * @param originalSubTitle
-     *            the originalSubTitle to set
+     * @param originalSubtitle
+     *            the originalSubtitle to set
      */
-    public void setOriginalSubTitle(String originalSubTitle) {
-        this.originalSubTitle = originalSubTitle;
+    public void setOriginalSubtitle(String originalSubtitle) {
+        this.originalSubtitle = originalSubtitle;
     }
 
     /**
@@ -140,50 +124,44 @@ public class Book {
     }
 
     /**
-     * @return the items
+     * @return the chapters
      */
-    public Collection<Item> getItems() {
-        return items;
+    public Collection<Chapter> getChapters() {
+        return chapters;
+    }
+
+    /**
+     * @return
+     */
+    public Chapter addChapter() {
+        Chapter chapter = new Chapter(this);
+        chapters.add(chapter);
+        return chapter;
     }
 
     /**
      * @param path
      * @return
-     * @throws ClassCastException
      */
-    public ImageItem importImage(String path) {
-        Path target = basePath.resolve(path);
-
-        if (!images.containsKey(target)) {
-            ImageItem item = new ImageItem(target);
-            items.add(item);
-            images.put(target, item);
+    public Resource loadResource(Path path) {
+        if (!resources.containsKey(path)) {
+            resources.put(path, new Resource(path));
         }
 
-        return (ImageItem) images.get(target);
+        return resources.get(path);
     }
 
     /**
      * @return
      */
-    public Page addPage() {
-        Page page = new Page(this);
-        items.add(page);
-
-        return page;
-    }
-
-    /**
-     * @return
-     */
-    public boolean hasCoverImage() {
-        return coverImage != null;
+    public Collection<Resource> getResources() {
+        return resources.values();
     }
 
     /**
      * @return the coverImage
      */
-    public ImageItem getCoverImage() {
+    public Image getCoverImage() {
         return coverImage;
     }
 
@@ -191,71 +169,11 @@ public class Book {
      * @param coverImage
      *            the coverImage to set
      */
-    public void setCoverImage(ImageItem coverImage) {
+    public void setCoverImage(Image coverImage) {
+        if (this.coverImage != null) {
+            throw new IllegalStateException("cover image is already set");
+        }
+
         this.coverImage = coverImage;
-
-        if (coverPage == null) {
-            coverPage = new CoverPage(this);
-            items.add(0, coverPage);
-        }
-    }
-
-    /**
-     * @return the coverPage
-     */
-    public CoverPage getCoverPage() {
-        return coverPage;
-    }
-
-    /**
-     * @return the tocPage
-     */
-    public Page getTocPage() {
-        return tocPage;
-    }
-
-    /**
-     * @param tocPage
-     *            the tocPage to set
-     */
-    public void setTocPage(Page tocPage) {
-        this.tocPage = tocPage;
-    }
-
-    /**
-     * @return
-     */
-    public String getUniqueId() {
-        StringBuilder builder = new StringBuilder();
-
-        if (title != null) {
-            builder.append(title);
-        }
-
-        if (originalTitle != null) {
-            builder.append(originalTitle);
-        }
-
-        if (subTitle != null) {
-            builder.append(subTitle);
-        }
-
-        if (originalSubTitle != null) {
-            builder.append(originalSubTitle);
-        }
-
-        if (author != null) {
-            builder.append(author);
-        }
-
-        if (translator != null) {
-            builder.append(translator);
-        }
-
-        UUID uuid =
-                UUID.nameUUIDFromBytes(builder.toString().getBytes(
-                        StandardCharsets.UTF_8));
-
-        return "urn:uuid:" + uuid;
     }
 }

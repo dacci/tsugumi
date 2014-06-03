@@ -10,11 +10,10 @@ import org.w3c.dom.Node;
 /**
  * @author dacci
  */
-public interface Section {
+public interface PageElement extends CharSequence {
 
-    /**
-     * @param document
-     * @return
-     */
-    Node generate(Page page, Document document);
+    @Override
+    PageElement subSequence(int start, int end);
+
+    Node build(Document document);
 }

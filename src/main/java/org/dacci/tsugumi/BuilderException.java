@@ -1,11 +1,11 @@
 /*
- * Copyright (c) 2014 NTT DATA SMS Corporation.
+ * Copyright (c) 2014 dacci.org
  */
 
 package org.dacci.tsugumi;
 
 /**
- * @author tsudasn
+ * @author dacci
  */
 @SuppressWarnings("serial")
 public class BuilderException extends Exception {
@@ -14,7 +14,13 @@ public class BuilderException extends Exception {
      * 
      */
     public BuilderException() {
-        super();
+    }
+
+    /**
+     * @param message
+     */
+    public BuilderException(String message) {
+        super(message);
     }
 
     /**
@@ -26,16 +32,20 @@ public class BuilderException extends Exception {
     }
 
     /**
-     * @param message
-     */
-    public BuilderException(String message) {
-        super(message);
-    }
-
-    /**
      * @param cause
      */
     public BuilderException(Throwable cause) {
         super(cause);
+    }
+
+    /**
+     * @param message
+     * @param cause
+     * @param enableSuppression
+     * @param writableStackTrace
+     */
+    protected BuilderException(String message, Throwable cause,
+            boolean enableSuppression, boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
     }
 }

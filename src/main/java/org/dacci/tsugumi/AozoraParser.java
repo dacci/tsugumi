@@ -15,22 +15,19 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.dacci.tsugumi.doc.Annotation;
 import org.dacci.tsugumi.doc.Book;
-import org.dacci.tsugumi.doc.Caption;
+import org.dacci.tsugumi.doc.Chapter;
+import org.dacci.tsugumi.doc.ElementSequence;
 import org.dacci.tsugumi.doc.Image;
-import org.dacci.tsugumi.doc.ImageItem;
-import org.dacci.tsugumi.doc.Page;
+import org.dacci.tsugumi.doc.PageElement;
 import org.dacci.tsugumi.doc.Paragraph;
+import org.dacci.tsugumi.doc.ParagraphContainer;
+import org.dacci.tsugumi.doc.Resource;
 import org.dacci.tsugumi.doc.Ruby;
-import org.dacci.tsugumi.doc.Section;
-import org.dacci.tsugumi.doc.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,44 +39,66 @@ public class AozoraParser implements Closeable {
     private static final Logger log = LoggerFactory
             .getLogger(AozoraParser.class);
 
-    private static final Pattern TAG_PATTERN = Pattern.compile("［＃(.+?)］");
-
-    private static final Pattern ANNOTATION_PATTERN = Pattern
-            .compile("(.+?)［＃「\\1」[には](.+?)］");
-
-    private static final Pattern START_TAG_PATTERN = Pattern
-            .compile("ここから(.+)");
-
-    private static final Pattern END_TAG_PATTERN = Pattern
-            .compile("ここで(.+)終わり");
-
-    private static final Pattern IMAGE_TAG_PATTERN = Pattern
-            .compile("(.*)（(.+)(?:、縦(\\d+)×横(\\d+))?）(入る)?");
-
-    private static final Pattern META_DATA_PATTERN = Pattern
-            .compile("(.+?)＝(.+)");
+    private static final Charset CHARSET = Charset.forName("MS932");
 
     private static final Pattern RUBY_PATTERN = Pattern
             .compile("(?:｜(.+?))?《(.+?)》");
 
-    private final Book book;
+    private static final Pattern CHAR_REFERENCE_PATTERN = Pattern
+            .compile("［＃.+?、\\d+-\\d+-\\d+］");
+
+    private static final Pattern ANNOTATION_PATTERN = Pattern
+            .compile("(.+?)［＃「\\1」[には](.+?)］");
+
+    private static final Pattern TAG_PATTERN = Pattern.compile("［＃(.+?)］");
+
+    private static final Pattern IMAGE_TAG_PATTERN = Pattern
+            .compile("(.*?)（(.+?)(?:、縦(\\d+)×横(\\d+))?）(?:入る)?");
+
+    /**
+     * @param string
+     * @return
+     */
+    private static int parseInt(String string, int start, int end) {
+        String digits = "０１２３４５６７８９";
+        int parsed = 0;
+
+        for (int i = start; i < end; ++i) {
+            parsed *= 10;
+
+            int digit = digits.indexOf(string.codePointAt(i));
+            if (digit < 0) {
+                throw new NumberFormatException();
+            }
+
+            parsed += digit;
+        }
+
+        return parsed;
+    }
+
+    private final Path basePath;
 
     private final BufferedReader reader;
 
-    private int row = 0;
+    private Book book;
 
-    private Deque<String> stack = new LinkedList<>();
+    private Chapter chapter;
 
-    private Deque<Paragraph> context = new LinkedList<>();
+    private int row;
 
-    private Page page;
+    private final Deque<String> context = new LinkedList<>();
+
+    private final Deque<Paragraph> stack = new LinkedList<>();
 
     /**
+     * @param basePath
      * @throws IOException
      */
-    public AozoraParser(Path file) throws IOException {
-        book = new Book(file.resolveSibling(""));
-        reader = Files.newBufferedReader(file, Charset.forName("MS932"));
+    public AozoraParser(Path basePath) throws IOException {
+        this.basePath = basePath;
+
+        reader = Files.newBufferedReader(basePath, CHARSET);
     }
 
     @Override
@@ -89,14 +108,20 @@ public class AozoraParser implements Closeable {
 
     /**
      * @return
-     * @throws IOException
      */
     public Book parse() throws ParserException {
-        try {
-            List<String> metaData = new ArrayList<>();
-            String line = null;
+        book = new Book();
+        chapter = book.addChapter();
 
-            while ((line = reader.readLine()) != null) {
+        row = 1;
+        context.clear();
+        stack.clear();
+        stack.push(chapter);
+
+        List<String> metaData = new ArrayList<>();
+
+        try {
+            for (String line; (line = reader.readLine()) != null; ++row) {
                 if (line.isEmpty()) {
                     break;
                 }
@@ -112,7 +137,7 @@ public class AozoraParser implements Closeable {
                 break;
 
             case 3:
-                book.setSubTitle(metaData.get(1));
+                book.setSubtitle(metaData.get(1));
                 book.setAuthor(metaData.get(2));
                 break;
 
@@ -124,301 +149,230 @@ public class AozoraParser implements Closeable {
 
             case 6:
                 book.setOriginalTitle(metaData.get(1));
-                book.setSubTitle(metaData.get(2));
-                book.setOriginalSubTitle(metaData.get(3));
+                book.setSubtitle(metaData.get(2));
+                book.setOriginalSubtitle(metaData.get(3));
                 book.setAuthor(metaData.get(4));
                 book.setTranslator(metaData.get(5));
                 break;
 
             default:
-                throw new ParserException("line: " + row +
-                        ", illegal meta data count: " + metaData.size());
+                throw new ParserException(row, "illegal meta data count: " +
+                        metaData.size());
             }
 
-            stack.clear();
-            context.clear();
-            page = book.addPage();
-            context.push(page.getParagraph());
+            ++row;
 
-            while ((line = reader.readLine()) != null) {
-                ++row;
+            for (String line; (line = reader.readLine()) != null; ++row) {
+                line = CHAR_REFERENCE_PATTERN.matcher(line).replaceAll("");
 
                 Matcher matcher = TAG_PATTERN.matcher(line);
-                if (matcher.lookingAt()) {
-                    parseTag(line, matcher);
+                if (matcher.matches()) {
+                    parse(matcher);
                 } else {
-                    context.push(context.peek().addParagraph());
-                    parseLine(line);
-                    context.pop();
+                    ElementSequence paragraph = new ElementSequence(line);
+                    parse(paragraph);
                 }
             }
-
-            return book;
-        } catch (IOException | RuntimeException e) {
-            throw new ParserException(e.getMessage() + " at line " + row, e);
+        } catch (RuntimeException | IOException e) {
+            throw new ParserException(row, e);
         }
+
+        return book;
     }
 
     /**
-     * @param line
-     * @param tagMatcher
+     * @param matcher
      * @throws ParserException
      */
-    private void parseTag(String line, Matcher tagMatcher)
-            throws ParserException {
-        String tag = tagMatcher.group(1);
+    private void parse(Matcher matcher) throws ParserException {
+        String tag = matcher.group(1);
 
         switch (tag) {
         case "改ページ":
-            stack.clear();
+            chapter = book.addChapter();
             context.clear();
-            page = book.addPage();
-            context.push(page.getParagraph());
-            return;
+            stack.clear();
+            stack.push(chapter);
 
-        case "大見出し":
-        case "中見出し":
-        case "小見出し":
-            Caption caption = context.peek().addCaption();
-            switch (tag.charAt(0)) {
-            case '大':
-                caption.setLevel(1);
-                break;
-
-            case '中':
-                caption.setLevel(2);
-                break;
-
-            case '小':
-                caption.setLevel(3);
-                break;
-            }
-
-            context.push(caption);
-            parseLine(line.substring(tagMatcher.end()));
-            context.pop();
-            return;
-
-        case "地付き":
-            context.push(context.peek().addParagraph());
-            context.peek().setStyle("align-end");
-            parseLine(line.substring(tagMatcher.end()));
-            context.pop();
+            log.debug("Page break");
             return;
         }
 
-        Matcher matcher = null;
-
-        matcher = START_TAG_PATTERN.matcher(tag);
-        if (matcher.matches()) {
-            String type = matcher.group(1);
-            stack.push(type);
-
-            Paragraph paragraph = context.peek().addParagraph();
-            context.push(paragraph);
-
-            if (type.equals("ゴシック体")) {
-                paragraph.setStyle("gfont");
-            } else if (type.endsWith("字下げ")) {
-                int amount = parseInt(type, 0, type.length() - 3) / 2;
-                paragraph.setStyle("start-" + amount + "em");
-            } else {
-                log.warn("Unsupported block: {}", type);
-            }
-
+        if (tag.startsWith("ここから")) {
+            push(tag.substring(4));
+            return;
+        } else if (tag.startsWith("ここで") && tag.endsWith("終わり")) {
+            pop(tag.substring(3, tag.length() - 3));
             return;
         }
 
-        matcher = END_TAG_PATTERN.matcher(tag);
-        if (matcher.matches()) {
-            String start = matcher.group(1);
-            String end = stack.pop();
-            if (!end.endsWith(start)) {
-                throw new ParserException("line: " + row + ", unmatched tag: " +
-                        end + " vs " + start);
-            }
+        int index = tag.indexOf('＝');
+        if (index > 0) {
+            String name = tag.substring(0, index);
+            String value = tag.substring(index + 1);
+            chapter.setProperty(name, value);
 
-            context.pop();
-
+            log.debug("Set property: {}, {}", name, value);
             return;
         }
 
-        matcher = IMAGE_TAG_PATTERN.matcher(tag);
-        if (matcher.matches()) {
-            String caption = matcher.group(1);
-            ImageItem imageItem = book.importImage(matcher.group(2));
+        Matcher tagMatcher = IMAGE_TAG_PATTERN.matcher(tag);
+        if (tagMatcher.matches()) {
+            String path = tagMatcher.group(2);
+            Resource resource = book.loadResource(basePath.resolve(path));
+            Image image = new Image(resource);
 
-            if (caption != null) {
-                switch (caption) {
-                case "表紙":
-                    book.setCoverImage(imageItem);
-                    return;
+            String width = tagMatcher.group(3);
+            if (width != null) {
+                image.setWidth(Integer.parseInt(width));
+            }
+
+            String height = tagMatcher.group(4);
+            if (height != null) {
+                image.setHeight(Integer.parseInt(height));
+            }
+
+            String alt = tagMatcher.group(1);
+            if (alt != null) {
+                image.setTitle(alt);
+
+                if (alt.equals("表紙")) {
+                    resource.setId("cover");
+                    resource.setProperties("cover-image");
+                    book.setCoverImage(image);
+                } else {
+                    stack.peek().add(image);
                 }
             }
 
-            Image image = new Image(imageItem);
-            image.setCaption(caption);
-
-            if (matcher.start(3) > 0) {
-                image.setWidth(Integer.parseInt(matcher.group(3)));
-            }
-
-            if (matcher.start(4) > 0) {
-                image.setHeight(Integer.parseInt(matcher.group(4)));
-            }
-
-            context.peek().addParagraph().addElement(image);
-
+            log.debug("Load image: {}, alt={}, width={}, height={}", path, alt,
+                    width, height);
             return;
         }
 
-        matcher = META_DATA_PATTERN.matcher(tag);
-        if (matcher.matches()) {
-            String key = matcher.group(1);
-            String value = matcher.group(2);
-
-            switch (key) {
-            case "タイトル":
-                page.setTitle(value);
-
-                if (value.equals("目次")) {
-                    page.setId("p-toc");
-                    book.setTocPage(page);
-                }
-                break;
-
-            default:
-                log.warn("Unknown key: {}", key);
-            }
-
-            return;
-        }
-
-        log.warn("Unsupported tag: {}", line);
-
-        if (!line.isEmpty()) {
-            context.peek().addParagraph().addElement(new Text(line));
-        }
+        log.warn("Unknown tag: {}", tag);
     }
 
     /**
-     * @param line
+     * @param sequence
+     * @throws ParserException
      */
-    private void parseLine(String line) {
-        SortedMap<Integer, Section> elements = new TreeMap<>();
-        NavigableMap<Integer, Integer> slices = new TreeMap<>();
-        slices.put(0, line.length());
+    private void parse(ElementSequence sequence) throws ParserException {
+        Matcher matcher;
 
-        Matcher matcher = RUBY_PATTERN.matcher(line);
-        while (matcher.find()) {
-            Ruby ruby = new Ruby();
+        matcher = RUBY_PATTERN.matcher(sequence);
+        while (matcher.find(0)) {
+            Ruby ruby =
+                    new Ruby(sequence.subSequence(matcher.start(2),
+                            matcher.end(2)));
+
             int start = matcher.start();
 
             if (matcher.start(1) == -1) {
-                int end = matcher.start(2) - 1;
-                start = end - 1;
-                UnicodeBlock block = UnicodeBlock.of(line.codePointAt(start));
+                int textEnd = matcher.start(2) - 1;
+                start = textEnd - 1;
+                UnicodeBlock block = UnicodeBlock.of(sequence.charAt(start));
+
                 for (; start >= 0; --start) {
                     if (start == 0) {
                         break;
                     }
 
-                    if (UnicodeBlock.of(line.codePointAt(start - 1)) != block) {
+                    if (UnicodeBlock.of(sequence.charAt(start - 1)) != block) {
                         break;
                     }
                 }
 
-                ruby.setText(line.substring(start, end));
+                ruby.setText(sequence.subSequence(start, textEnd));
             } else {
-                ruby.setText(matcher.group(1));
+                ruby.setText(sequence.subSequence(matcher.start(1),
+                        matcher.end(1)));
             }
 
-            ruby.setRuby(matcher.group(2));
-            elements.put(start, ruby);
-
-            Integer oldStart = slices.floorKey(start);
-            Integer oldEnd = slices.put(oldStart, start);
-            slices.put(matcher.end(), oldEnd);
+            sequence.replace(start, matcher.end(), ruby);
         }
 
-        matcher = ANNOTATION_PATTERN.matcher(line);
-        while (matcher.find()) {
-            Text text = new Text(matcher.group(1));
-            String type = matcher.group(2);
+        matcher = ANNOTATION_PATTERN.matcher(sequence);
+        while (matcher.find(0)) {
+            PageElement text =
+                    sequence.subSequence(matcher.start(1), matcher.end(1));
+            PageElement command =
+                    sequence.subSequence(matcher.start(2), matcher.end(2));
+            Annotation annotation = new Annotation(text, command);
 
-            switch (type) {
-            case "ゴシック体":
-                text.setStyle("gfont");
-                break;
+            sequence.replace(matcher.start(), matcher.end(), annotation);
+        }
 
-            case "傍点":
-                text.setStyle("em-sesame");
-                break;
+        while (sequence != null) {
+            matcher = TAG_PATTERN.matcher(sequence);
+            if (matcher.lookingAt()) {
+                String context =
+                        new StringBuilder(sequence.subSequence(
+                                matcher.start(1), matcher.end(1))).toString();
+                push(context);
 
-            case "リンク":
-                text.setLink(text.getText());
-                break;
+                sequence.erase(0, matcher.end());
+                parse(sequence);
 
-            default:
-                if (type.endsWith("段階大きい文字")) {
-                    int amount =
-                            parseInt(line, matcher.start(2), matcher.end(2) - 7) * 10 + 100;
-                    text.setStyle(String.format("font-%03dper", amount));
-                } else if (type.endsWith("段階小さい文字")) {
-                    int amount =
-                            100 - parseInt(line, matcher.start(2),
-                                    matcher.end(2) - 7) * 10;
-                    text.setStyle(String.format("font-%03dper", amount));
-                } else {
-                    log.warn("Unknown annotation: {}", type);
-                }
+                pop(context);
+                return;
             }
 
-            Integer start = matcher.start();
-            elements.put(start, text);
+            ElementSequence deferred = null;
 
-            Integer oldStart = slices.floorKey(start);
-            Integer oldEnd = slices.put(oldStart, start);
-            slices.put(matcher.end(), oldEnd);
-        }
-
-        for (Map.Entry<Integer, Integer> slice : slices.entrySet()) {
-            if (!slice.getKey().equals(slice.getValue())) {
-                String text = line.substring(slice.getKey(), slice.getValue());
-                elements.put(slice.getKey(), new Text(text));
+            if (matcher.find(0)) {
+                deferred =
+                        sequence.subSequence(matcher.start(), sequence.length());
+                sequence.erase(matcher.start(), sequence.length());
             }
-        }
 
-        for (Section element : elements.values()) {
-            context.peek().addElement(element);
+            stack.peek().add(sequence);
+
+            sequence = deferred;
         }
     }
 
-    /**
-     * @param string
-     * @param start
-     * @param end
-     * @return
-     */
-    private int parseInt(String string, int start, int end) {
-        if (start >= end) {
-            throw new IllegalArgumentException();
-        }
+    private void push(String starting) {
+        context.push(starting);
 
-        String digits = "０１２３４５６７８９";
-        int result = 0;
+        ParagraphContainer container = new ParagraphContainer();
+        stack.push(container);
 
-        for (int i = start; i < end; ++i) {
-            result *= 10;
+        if (starting.equals("地付き")) {
+            container.setStyle("align-end");
+        } else if (starting.endsWith("字下げ")) {
+            int amount = parseInt(starting, 0, starting.length() - 3) / 2;
+            container.setStyle("start-" + amount + "em");
+        } else if (starting.endsWith("見出し")) {
+            switch (starting.charAt(0)) {
+            case '大':
+                container.setCaptionLevel(1);
+                break;
 
-            int digit = digits.indexOf(string.codePointAt(i));
-            if (digit < 0) {
-                throw new NumberFormatException();
+            case '中':
+                container.setCaptionLevel(2);
+                break;
+
+            case '小':
+                container.setCaptionLevel(3);
+                break;
             }
-
-            result += digit;
+        } else {
+            log.warn("Unknown context: {}", starting);
         }
 
-        return result;
+        log.debug("Start of context: {}", starting);
+    }
+
+    private void pop(String ending) throws ParserException {
+        String current = context.pop();
+        if (!current.endsWith(ending)) {
+            throw new ParserException(row, "Unmatched tag: " + current +
+                    " vs " + ending);
+        }
+
+        log.debug("End of context: {}", ending);
+
+        stack.peek().add(stack.pop());
     }
 }

@@ -5,112 +5,86 @@
 package org.dacci.tsugumi.doc;
 
 import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
  * @author dacci
  */
-public class Text implements Section {
+public class Text implements PageElement {
 
-    private String text;
+    private final String string;
 
-    private String style;
+    private final int start;
 
-    private String link;
+    private final int length;
 
     /**
-     * @param text
+     * @param string
      */
-    public Text(String text) {
-        this.text = text;
+    Text(String string) {
+        this(string, 0);
     }
 
     /**
-     * @return the text
+     * @param string
+     * @param start
      */
-    public String getText() {
-        return text;
+    Text(String string, int start) {
+        this(string, 0, string.length());
     }
 
     /**
-     * @param text
-     *            the text to set
+     * @param string
+     * @param start
+     * @param end
      */
-    public void setText(String text) {
-        this.text = text;
+    Text(String string, int start, int length) {
+        this.string = string;
+        this.start = start;
+        this.length = length;
     }
 
     /**
-     * @return the style
+     * @return the start
      */
-    public String getStyle() {
-        return style;
-    }
-
-    /**
-     * @param style
-     *            the style to set
-     */
-    public void setStyle(String style) {
-        this.style = style;
-    }
-
-    /**
-     * @return the link
-     */
-    public String getLink() {
-        return link;
-    }
-
-    /**
-     * @param link
-     *            the link to set
-     */
-    public void setLink(String link) {
-        this.link = link;
+    public int getStart() {
+        return start;
     }
 
     @Override
-    public Node generate(Page page, Document document) {
-        Element element = null;
+    public int length() {
+        return length;
+    }
 
-        if (link != null) {
-            Item target = null;
-            for (Item item : page.getBook().getItems()) {
-                if (item instanceof Page &&
-                        link.equals(((Page) item).getTitle())) {
-                    target = item;
-                    break;
-                }
-            }
-
-            if (target != null) {
-                element = document.createElement("a");
-                element.setAttribute("href",
-                        target.getHref(page.getPath().getParent()).toString());
-            }
+    @Override
+    public char charAt(int index) {
+        if (index >= length) {
+            throw new IndexOutOfBoundsException();
         }
 
-        if (style != null) {
-            if (element == null) {
-                element = document.createElement("span");
-            }
+        return string.charAt(start + index);
+    }
 
-            element.setAttribute("class", style);
+    @Override
+    public PageElement subSequence(int start, int end) {
+        if (start < 0 || end < 0 || end <= start) {
+            throw new IllegalArgumentException();
+        }
+        if (length < end - start) {
+            throw new IndexOutOfBoundsException();
         }
 
-        Node textNode = document.createTextNode(text);
-        if (element == null) {
-            return textNode;
-        } else {
-            element.appendChild(textNode);
-            return element;
-        }
+        return new Text(string, this.start + start, end - start);
     }
 
     @Override
     public String toString() {
-        return text;
+        return new StringBuilder("Text[").append(string, start, start + length)
+                .append(']').toString();
+    }
+
+    @Override
+    public Node build(Document document) {
+        return document.createTextNode(string.substring(start, start + length));
     }
 }

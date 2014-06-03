@@ -11,50 +11,51 @@ import org.w3c.dom.Node;
 /**
  * @author dacci
  */
-public class Image implements Section {
+public class Image implements PageElement {
 
-    private ImageItem item;
+    private Resource image;
 
-    private String caption;
+    private String title;
 
-    private int width;
+    private int width = -1;
 
-    private int height;
+    private int height = -1;
 
-    private String style = "fit";
-
-    public Image(ImageItem item) {
-        this.item = item;
+    /**
+     * @param image
+     */
+    public Image(Resource image) {
+        this.image = image;
     }
 
     /**
-     * @return the item
+     * @return the image
      */
-    public ImageItem getItem() {
-        return item;
+    public Resource getImage() {
+        return image;
     }
 
     /**
-     * @param item
-     *            the item to set
+     * @param image
+     *            the image to set
      */
-    public void setItem(ImageItem item) {
-        this.item = item;
+    public void setImage(Resource image) {
+        this.image = image;
     }
 
     /**
-     * @return the caption
+     * @return the title
      */
-    public String getCaption() {
-        return caption;
+    public String getTitle() {
+        return title;
     }
 
     /**
-     * @param caption
-     *            the caption to set
+     * @param title
+     *            the alt to set
      */
-    public void setCaption(String caption) {
-        this.caption = caption;
+    public void setTitle(String title) {
+        this.title = title;
     }
 
     /**
@@ -87,61 +88,45 @@ public class Image implements Section {
         this.height = height;
     }
 
-    /**
-     * @return the style
-     */
-    public String getStyle() {
-        return style;
-    }
-
-    /**
-     * @param style
-     *            the style to set
-     */
-    public void setStyle(String style) {
-        this.style = style;
+    @Override
+    public int length() {
+        return 0;
     }
 
     @Override
-    public Node generate(Page page, Document document) {
-        Element element = document.createElement("img");
-        element.setAttribute("src", item.getHref(page.getPath().getParent())
-                .toString());
+    public char charAt(int index) {
+        throw new UnsupportedOperationException();
+    }
 
-        if (caption != null && !caption.isEmpty()) {
-            element.setAttribute("alt", caption);
-            element.setAttribute("title", caption);
-        }
-
-        if (width > 0) {
-            element.setAttribute("width", Integer.toString(width));
-        }
-
-        if (height > 0) {
-            element.setAttribute("height", Integer.toString(height));
-        }
-
-        if (style != null) {
-            element.setAttribute("class", style);
-        }
-
-        return element;
+    @Override
+    public PageElement subSequence(int start, int end) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("［＃");
+        return "Image[]";
+    }
 
-        if (caption != null) {
-            builder.append(caption);
+    @Override
+    public Node build(Document document) {
+        Element element = document.createElement("img");
+
+        element.setAttribute("src", "");
+
+        if (title != null && !title.isEmpty()) {
+            element.setAttribute("alt", title);
+            element.setAttribute("title", title);
         }
 
-        builder.append("（").append(item);
-
-        if (width > 0 || height > 0) {
-            builder.append("、縦").append(width).append("×横").append(width);
+        if (width >= 0) {
+            element.setAttribute("width", Integer.toString(width));
         }
 
-        return builder.append("）入る］").toString();
+        if (height >= 0) {
+            element.setAttribute("height", Integer.toString(height));
+        }
+
+        return element;
     }
 }
