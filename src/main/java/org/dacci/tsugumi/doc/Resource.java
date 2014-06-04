@@ -64,11 +64,26 @@ public class Resource {
     }
 
     /**
+     * @return the destination
+     */
+    public Path getDestination() {
+        return destination;
+    }
+
+    /**
+     * @param destination
+     *            the destination to set
+     */
+    public void setDestination(Path destination) {
+        this.destination = destination;
+    }
+
+    /**
      * @param from
      * @return
      */
     public String getHref(Path from) {
-        return from.relativize(destination).toString();
+        return from.relativize(destination).toString().replace('\\', '/');
     }
 
     /**
@@ -87,6 +102,9 @@ public class Resource {
 
         case "png":
             return "image/png";
+
+        case "xhtml":
+            return "application/xhtml+xml";
         }
 
         return "application/octet-stream";

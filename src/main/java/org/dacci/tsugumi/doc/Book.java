@@ -4,20 +4,24 @@
 
 package org.dacci.tsugumi.doc;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.UUID;
 
 /**
  * @author dacci
  */
 public class Book {
 
-    private final Collection<Chapter> chapters = new ArrayList<>();
+    private final List<Chapter> chapters = new ArrayList<>();
 
-    private final Map<Path, Resource> resources = new LinkedHashMap<>();
+    int nextChapter = 0;
+
+    private final List<Resource> resources = new ArrayList<>();
 
     private String title;
 
@@ -134,7 +138,14 @@ public class Book {
      * @return
      */
     public Chapter addChapter() {
-        Chapter chapter = new Chapter(this);
+        String id = String.format("p-%03d", ++nextChapter);
+        Path path = Paths.get(".", "item", "xhtml", id + ".xhtml");
+
+        PageResource resource = new PageResource(path);
+        resource.setId(id);
+        resources.add(resource);
+
+        Chapter chapter = new Chapter(this, resource);
         chapters.add(chapter);
         return chapter;
     }
@@ -144,18 +155,22 @@ public class Book {
      * @return
      */
     public Resource loadResource(Path path) {
-        if (!resources.containsKey(path)) {
-            resources.put(path, new Resource(path));
+        for (Resource resource : resources) {
+            if (path.equals(resource.getSource())) {
+                return resource;
+            }
         }
 
-        return resources.get(path);
+        Resource resource = new Resource(path);
+        resources.add(resource);
+        return resource;
     }
 
     /**
      * @return
      */
     public Collection<Resource> getResources() {
-        return resources.values();
+        return resources;
     }
 
     /**
@@ -163,6 +178,13 @@ public class Book {
      */
     public Image getCoverImage() {
         return coverImage;
+    }
+
+    /**
+     * @return
+     */
+    public boolean hasCoverImage() {
+        return coverImage != null;
     }
 
     /**
@@ -175,5 +197,52 @@ public class Book {
         }
 
         this.coverImage = coverImage;
+
+        Path path = Paths.get(".", "item", "xhtml", "p-cover.xhtml");
+        PageResource resource = new PageResource(path);
+        resource.setId("p-cover");
+        resources.add(0, resource);
+
+        Chapter chapter = new Chapter(this, resource);
+        chapter.setStyle("p-cover");
+        chapter.setType("cover");
+        chapter.add(new ElementParagraph(coverImage));
+        chapters.add(0, chapter);
+    }
+
+    /**
+     * @return
+     */
+    public String getUniqueId() {
+        StringBuilder builder = new StringBuilder();
+
+        if (title != null && !title.isEmpty()) {
+            builder.append(title);
+        }
+
+        if (originalTitle != null && !originalTitle.isEmpty()) {
+            builder.append(originalTitle);
+        }
+
+        if (subtitle != null && !subtitle.isEmpty()) {
+            builder.append(subtitle);
+        }
+
+        if (originalSubtitle != null && !originalSubtitle.isEmpty()) {
+            builder.append(originalSubtitle);
+        }
+
+        if (author != null && !author.isEmpty()) {
+            builder.append(author);
+        }
+
+        if (translator != null && !translator.isEmpty()) {
+            builder.append(translator);
+        }
+
+        return "urn:uuid:" +
+                UUID.nameUUIDFromBytes(
+                        builder.toString().getBytes(StandardCharsets.UTF_8))
+                        .toString();
     }
 }

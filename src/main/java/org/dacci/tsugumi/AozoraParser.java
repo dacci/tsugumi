@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import org.dacci.tsugumi.doc.Annotation;
 import org.dacci.tsugumi.doc.Book;
 import org.dacci.tsugumi.doc.Chapter;
+import org.dacci.tsugumi.doc.ElementParagraph;
 import org.dacci.tsugumi.doc.ElementSequence;
 import org.dacci.tsugumi.doc.Image;
 import org.dacci.tsugumi.doc.PageElement;
@@ -89,16 +90,16 @@ public class AozoraParser implements Closeable {
 
     private final Deque<String> context = new LinkedList<>();
 
-    private final Deque<Paragraph> stack = new LinkedList<>();
+    private final Deque<ParagraphContainer> stack = new LinkedList<>();
 
     /**
-     * @param basePath
+     * @param source
      * @throws IOException
      */
-    public AozoraParser(Path basePath) throws IOException {
-        this.basePath = basePath;
+    public AozoraParser(Path source) throws IOException {
+        this.basePath = source.toAbsolutePath().getParent();
 
-        reader = Files.newBufferedReader(basePath, CHARSET);
+        reader = Files.newBufferedReader(source, CHARSET);
     }
 
     @Override
@@ -220,7 +221,7 @@ public class AozoraParser implements Closeable {
         if (tagMatcher.matches()) {
             String path = tagMatcher.group(2);
             Resource resource = book.loadResource(basePath.resolve(path));
-            Image image = new Image(resource);
+            Image image = new Image(resource, chapter.getResource());
 
             String width = tagMatcher.group(3);
             if (width != null) {
@@ -241,7 +242,7 @@ public class AozoraParser implements Closeable {
                     resource.setProperties("cover-image");
                     book.setCoverImage(image);
                 } else {
-                    stack.peek().add(image);
+                    stack.peek().add(new ElementParagraph(image));
                 }
             }
 
@@ -310,6 +311,7 @@ public class AozoraParser implements Closeable {
                         new StringBuilder(sequence.subSequence(
                                 matcher.start(1), matcher.end(1))).toString();
                 push(context);
+                setStyle(context);
 
                 sequence.erase(0, matcher.end());
                 parse(sequence);
@@ -326,25 +328,22 @@ public class AozoraParser implements Closeable {
                 sequence.erase(matcher.start(), sequence.length());
             }
 
-            stack.peek().add(sequence);
+            stack.peek().add(new ElementParagraph(sequence));
 
             sequence = deferred;
         }
     }
 
-    private void push(String starting) {
-        context.push(starting);
+    private void setStyle(String style) {
+        ParagraphContainer container = stack.peek();
 
-        ParagraphContainer container = new ParagraphContainer();
-        stack.push(container);
-
-        if (starting.equals("地付き")) {
+        if (style.equals("地付き")) {
             container.setStyle("align-end");
-        } else if (starting.endsWith("字下げ")) {
-            int amount = parseInt(starting, 0, starting.length() - 3) / 2;
+        } else if (style.endsWith("字下げ")) {
+            int amount = parseInt(style, 0, style.length() - 3) / 2;
             container.setStyle("start-" + amount + "em");
-        } else if (starting.endsWith("見出し")) {
-            switch (starting.charAt(0)) {
+        } else if (style.endsWith("見出し")) {
+            switch (style.charAt(0)) {
             case '大':
                 container.setCaptionLevel(1);
                 break;
@@ -358,21 +357,30 @@ public class AozoraParser implements Closeable {
                 break;
             }
         } else {
-            log.warn("Unknown context: {}", starting);
+            log.warn("Unknown style: {}", style);
         }
-
-        log.debug("Start of context: {}", starting);
     }
 
-    private void pop(String ending) throws ParserException {
+    private void push(String style) {
+        context.push(style);
+
+        ParagraphContainer container = new ParagraphContainer();
+        stack.push(container);
+        setStyle(style);
+
+        log.debug("Start of block: {}", style);
+    }
+
+    private void pop(String style) throws ParserException {
         String current = context.pop();
-        if (!current.endsWith(ending)) {
+        if (!current.endsWith(style)) {
             throw new ParserException(row, "Unmatched tag: " + current +
-                    " vs " + ending);
+                    " vs " + style);
         }
 
-        log.debug("End of context: {}", ending);
+        log.debug("End of block: {}", style);
 
-        stack.peek().add(stack.pop());
+        Paragraph container = stack.pop();
+        stack.peek().add(container);
     }
 }

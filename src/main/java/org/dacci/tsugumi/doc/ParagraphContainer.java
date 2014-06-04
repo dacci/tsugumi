@@ -16,17 +16,12 @@ import org.w3c.dom.Node;
  */
 public class ParagraphContainer implements Paragraph {
 
-    private static class ElementParagraph implements Paragraph {
+    private static class ElementWrapper implements Paragraph {
 
         private final PageElement element;
 
-        public ElementParagraph(PageElement element) {
+        public ElementWrapper(PageElement element) {
             this.element = element;
-        }
-
-        @Override
-        public String toString() {
-            return "ElementParagraph[" + element.toString() + "]";
         }
 
         @Override
@@ -111,7 +106,7 @@ public class ParagraphContainer implements Paragraph {
 
     @Override
     public void add(PageElement element) {
-        paragraphs.add(new ElementParagraph(element));
+        paragraphs.add(new ElementWrapper(element));
     }
 
     @Override
@@ -130,13 +125,7 @@ public class ParagraphContainer implements Paragraph {
         }
 
         for (Paragraph paragraph : paragraphs) {
-            if (paragraphs.size() == 1 ||
-                    paragraph instanceof ParagraphContainer) {
-                element.appendChild(paragraph.build(document));
-            } else {
-                element.appendChild(document.createElement("p")).appendChild(
-                        paragraph.build(document));
-            }
+            element.appendChild(paragraph.build(document));
         }
 
         return element;

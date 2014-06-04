@@ -15,6 +15,8 @@ public class Image implements PageElement {
 
     private Resource image;
 
+    private Resource chapter;
+
     private String title;
 
     private int width = -1;
@@ -24,8 +26,9 @@ public class Image implements PageElement {
     /**
      * @param image
      */
-    public Image(Resource image) {
+    public Image(Resource image, Resource chapter) {
         this.image = image;
+        this.chapter = chapter;
     }
 
     /**
@@ -112,7 +115,9 @@ public class Image implements PageElement {
     public Node build(Document document) {
         Element element = document.createElement("img");
 
-        element.setAttribute("src", "");
+        element.setAttribute("src",
+                image.getHref(chapter.getDestination().getParent()));
+        element.setAttribute("class", "fit");
 
         if (title != null && !title.isEmpty()) {
             element.setAttribute("alt", title);
