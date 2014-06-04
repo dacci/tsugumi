@@ -83,7 +83,7 @@ public class Chapter extends ParagraphContainer {
         html.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
         html.setAttribute("xmlns:epub", "http://www.idpf.org/2007/ops");
         html.setAttribute("xml:lang", "ja");
-        html.setAttribute("class", "hltr");
+        html.setAttribute("class", "vrtl");
         document.appendChild(html);
 
         Element head = document.createElement("head");

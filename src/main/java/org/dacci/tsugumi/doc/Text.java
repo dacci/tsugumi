@@ -79,8 +79,7 @@ public class Text implements PageElement {
 
     @Override
     public String toString() {
-        return new StringBuilder("Text[").append(string, start, start + length)
-                .append(']').toString();
+        return string.substring(start, start + length);
     }
 
     @Override

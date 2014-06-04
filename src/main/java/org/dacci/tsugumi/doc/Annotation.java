@@ -71,7 +71,7 @@ public class Annotation implements PageElement {
 
     @Override
     public String toString() {
-        return "Annotation[" + text + '=' + type + ']';
+        return text.toString();
     }
 
     @Override

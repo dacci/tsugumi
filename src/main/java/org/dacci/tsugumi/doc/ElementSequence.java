@@ -180,9 +180,9 @@ public class ElementSequence implements PageElement {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("ElementSequence[");
-        slices.values().forEach((Object slice) -> builder.append(slice));
-        return builder.append("]").toString();
+        StringBuilder builder = new StringBuilder();
+        slices.values().forEach(builder::append);
+        return builder.toString();
     }
 
     @Override

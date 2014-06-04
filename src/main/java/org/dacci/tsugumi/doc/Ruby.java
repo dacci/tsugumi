@@ -75,7 +75,7 @@ public class Ruby implements PageElement {
 
     @Override
     public String toString() {
-        return "Ruby[" + text + '=' + ruby + ']';
+        return text.toString();
     }
 
     @Override

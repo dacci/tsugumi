@@ -85,6 +85,8 @@ public class EPubBuilder {
 
     private final List<Resource> resources = new ArrayList<>();
 
+    private boolean used = false;
+
     private Document containerDocument;
 
     private Document packageDocument;
@@ -115,6 +117,11 @@ public class EPubBuilder {
      * @throws BuilderException
      */
     public void build(Book book) throws BuilderException {
+        if (used) {
+            throw new IllegalStateException("this instance is already used.");
+        }
+
+        used = true;
         resources.clear();
         resources.addAll(book.getResources());
 
@@ -269,9 +276,7 @@ public class EPubBuilder {
 
             if (resource instanceof PageResource) {
                 element = document.createElement("itemref");
-                element.setAttribute("linear", "yes");
                 element.setAttribute("idref", resource.getId());
-                element.setAttribute("properties", "page-spread-left");
                 spine.appendChild(element);
             }
         }

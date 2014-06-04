@@ -12,9 +12,9 @@ import org.w3c.dom.Node;
  */
 public interface Paragraph {
 
-    void add(Paragraph paragraph);
+    // void add(Paragraph paragraph);
 
-    void add(PageElement element);
+    // void add(PageElement element);
 
     Node build(Document document);
 }

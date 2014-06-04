@@ -93,7 +93,7 @@ public class Image implements PageElement {
 
     @Override
     public int length() {
-        return 0;
+        return 1;
     }
 
     @Override
