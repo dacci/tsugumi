@@ -30,6 +30,8 @@ public final class Main {
     public static void main(String[] args) {
         Options options = new Options();
         options.addOption("d", "directory", false, "Save as directory.");
+        options.addOption("h", "horizontal", false,
+                "Output book witten horizontally.");
 
         try {
             CommandLine commandLine = new GnuParser().parse(options, args);
@@ -44,6 +46,20 @@ public final class Main {
      */
     @SuppressWarnings("unchecked")
     private static void main(CommandLine commandLine) {
+        EPubBuilder builder;
+        try {
+            builder = new EPubBuilder();
+
+            if (commandLine.hasOption("horizontal")) {
+                builder.setOption(EPubOption.Direction, EPubOption.LeftToRight);
+            } else {
+                builder.setOption(EPubOption.Direction, EPubOption.RightToLeft);
+            }
+        } catch (BuilderException e) {
+            log.error("Failed to setup builder", e);
+            return;
+        }
+
         for (String arg : (List<String>) commandLine.getArgList()) {
             Path path = Paths.get(arg);
             Book book = null;
@@ -58,7 +74,6 @@ public final class Main {
             }
 
             try {
-                EPubBuilder builder = new EPubBuilder();
                 builder.build(book);
 
                 String name = book.getAuthor() + " - " + book.getTitle();

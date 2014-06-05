@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -20,6 +21,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,12 +56,14 @@ public class EPubBuilder {
     private static final Logger log = LoggerFactory
             .getLogger(EPubBuilder.class);
 
-    private static final byte[] MIMETYPE = "application/epub+zip".getBytes();
+    private static final byte[] MIMETYPE = "application/epub+zip"
+            .getBytes(StandardCharsets.UTF_8);
 
-    private static final byte[] DOCTYPE_HTML5 = "<!DOCTYPE html>".getBytes();
+    private static final byte[] DOCTYPE_HTML5 = "<!DOCTYPE html>"
+            .getBytes(StandardCharsets.UTF_8);
 
     private static final byte[] LINE_SEPARATOR = System.getProperty(
-            "line.separator").getBytes();
+            "line.separator").getBytes(StandardCharsets.UTF_8);
 
     private static final Path ROOT_PATH = Paths.get(".");
 
@@ -83,9 +87,10 @@ public class EPubBuilder {
 
     private final Transformer transformer;
 
-    private final List<Resource> resources = new ArrayList<>();
+    private final EnumMap<EPubOption, Object> options = new EnumMap<>(
+            EPubOption.class);
 
-    private boolean used = false;
+    private final List<Resource> resources = new ArrayList<>();
 
     private Document containerDocument;
 
@@ -113,17 +118,31 @@ public class EPubBuilder {
     }
 
     /**
+     * @param option
+     * @return
+     */
+    public Object getOption(EPubOption option) {
+        return options.get(option);
+    }
+
+    /**
+     * @param option
+     * @param value
+     */
+    public void setOption(EPubOption option, Object value) {
+        options.put(option, value);
+    }
+
+    /**
      * @param book
      * @throws BuilderException
      */
     public void build(Book book) throws BuilderException {
-        if (used) {
-            throw new IllegalStateException("this instance is already used.");
-        }
-
-        used = true;
         resources.clear();
         resources.addAll(book.getResources());
+        containerDocument = null;
+        packageDocument = null;
+        navigationDocument = null;
 
         log.debug("Resolving resources");
 
@@ -161,8 +180,29 @@ public class EPubBuilder {
 
         log.debug("Building pages");
 
+        EPubOption direction = (EPubOption) options.get(EPubOption.Direction);
+
         for (Chapter chapter : book.getChapters()) {
             chapter.build(builder);
+
+            if (direction != null) {
+                Document document =
+                        ((PageResource) chapter.getResource()).getDocument();
+                Element html = (Element) document.getFirstChild();
+
+                switch (direction) {
+                case LeftToRight:
+                    html.setAttribute("class", "hltr");
+                    break;
+
+                case RightToLeft:
+                    html.setAttribute("class", "vrtl");
+                    break;
+
+                default:
+                    log.warn("Invalid value for direction: {}", direction);
+                }
+            }
         }
 
         buildContainer();
@@ -249,7 +289,24 @@ public class EPubBuilder {
         root.appendChild(manifest);
 
         Element spine = document.createElement("spine");
-        spine.setAttribute("page-progression-direction", "rtl");
+
+        if (options.containsKey(EPubOption.Direction)) {
+            EPubOption direction =
+                    (EPubOption) options.get(EPubOption.Direction);
+            switch (direction) {
+            case LeftToRight:
+                spine.setAttribute("page-progression-direction", "ltr");
+                break;
+
+            case RightToLeft:
+                spine.setAttribute("page-progression-direction", "rtl");
+                break;
+
+            default:
+                log.warn("Invalid value for direction: {}", direction);
+            }
+        }
+
         root.appendChild(spine);
 
         element = document.createElement("item");
