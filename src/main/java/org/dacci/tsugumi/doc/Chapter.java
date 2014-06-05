@@ -108,15 +108,16 @@ public class Chapter extends ParagraphContainer {
         head.appendChild(element);
 
         Element body = document.createElement("body");
-        body.setAttribute("class", "main");
+        html.appendChild(body);
 
         if (type != null && !type.isEmpty()) {
             body.setAttribute("epub:type", type);
         }
 
-        html.appendChild(body);
-
-        body.appendChild(build(document));
+        Element content = (Element) build(document);
+        body.setAttribute("class", content.getAttribute("class"));
+        content.setAttribute("class", "main");
+        body.appendChild(content);
 
         resource.setDocument(document);
     }
