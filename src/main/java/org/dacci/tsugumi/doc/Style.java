@@ -4,29 +4,32 @@
 
 package org.dacci.tsugumi.doc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 /**
  * @author dacci
  */
-public class Annotation implements PageElement {
-
-    private static final Logger log = LoggerFactory.getLogger(Annotation.class);
+public class Style implements PageElement {
 
     private final PageElement text;
 
-    private final PageElement type;
+    private String style;
 
     /**
      * @param text
-     * @param type
      */
-    public Annotation(PageElement text, PageElement type) {
+    public Style(PageElement text) {
+        this(text, null);
+    }
+
+    /**
+     * @param text
+     * @param style
+     */
+    public Style(PageElement text, String style) {
         this.text = text;
-        this.type = type;
+        this.style = style;
     }
 
     /**
@@ -37,10 +40,18 @@ public class Annotation implements PageElement {
     }
 
     /**
-     * @return the type
+     * @return the style
      */
-    public PageElement getType() {
-        return type;
+    public String getStyle() {
+        return style;
+    }
+
+    /**
+     * @param style
+     *            the style to set
+     */
+    public void setStyle(String style) {
+        this.style = style;
     }
 
     @Override
@@ -66,7 +77,7 @@ public class Annotation implements PageElement {
             return this;
         }
 
-        return new Annotation(text.subSequence(start, end), type);
+        return new Style(text.subSequence(start, end), style);
     }
 
     @Override
@@ -77,17 +88,12 @@ public class Annotation implements PageElement {
     @Override
     public Element build(Document document) {
         Element element = document.createElement("span");
-        element.appendChild(text.build(document));
 
-        String type = new StringBuilder(this.type).toString();
-        switch (type) {
-        case "ゴシック体":
-            element.setAttribute("class", "gfont");
-            break;
-
-        default:
-            log.warn("Unknown annotation: {}", type);
+        if (style != null && !style.isEmpty()) {
+            element.setAttribute("class", style);
         }
+
+        element.appendChild(text.build(document));
 
         return element;
     }

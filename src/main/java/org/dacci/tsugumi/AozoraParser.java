@@ -12,13 +12,15 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.dacci.tsugumi.doc.Annotation;
 import org.dacci.tsugumi.doc.Book;
 import org.dacci.tsugumi.doc.Chapter;
 import org.dacci.tsugumi.doc.ElementSequence;
@@ -28,7 +30,7 @@ import org.dacci.tsugumi.doc.Paragraph;
 import org.dacci.tsugumi.doc.ParagraphContainer;
 import org.dacci.tsugumi.doc.Resource;
 import org.dacci.tsugumi.doc.Ruby;
-import org.dacci.tsugumi.doc.SimpleParagraph;
+import org.dacci.tsugumi.doc.Style;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +57,23 @@ public class AozoraParser implements Closeable {
 
     private static final Pattern IMAGE_TAG_PATTERN = Pattern
             .compile("(.*?)（(.+?)(?:、縦(\\d+)×横(\\d+))?）(?:入る)?");
+
+    private static final Map<String, String> WORD_STYLES;
+
+    private static final Map<String, String> PARAGRAPH_STYLES;
+
+    static {
+        Map<String, String> map;
+
+        map = new HashMap<>();
+        map.put("ゴシック体", "gfont");
+        map.put("傍点", "em-sesame");
+        WORD_STYLES = Collections.unmodifiableMap(map);
+
+        map = new HashMap<>();
+        map.put("地付き", "align-end");
+        PARAGRAPH_STYLES = Collections.unmodifiableMap(map);
+    }
 
     /**
      * @param string
@@ -191,11 +210,10 @@ public class AozoraParser implements Closeable {
             while (matcher.find(0)) {
                 PageElement text =
                         sequence.subSequence(matcher.start(1), matcher.end(1));
-                PageElement command =
-                        sequence.subSequence(matcher.start(2), matcher.end(2));
-                Annotation annotation = new Annotation(text, command);
+                Style style = new Style(text);
+                setStyle(matcher.group(2), style);
 
-                sequence.replace(matcher.start(), matcher.end(), annotation);
+                sequence.replace(matcher.start(), matcher.end(), style);
                 modified = true;
             }
 
@@ -260,7 +278,7 @@ public class AozoraParser implements Closeable {
                 ElementSequence subSequence =
                         sequence.subSequence(0, matcher.start());
 
-                SimpleParagraph paragraph = new SimpleParagraph(subSequence);
+                Paragraph paragraph = new Paragraph(subSequence);
 
                 if (lastTag != null) {
                     setStyle(lastTag, paragraph);
@@ -274,7 +292,7 @@ public class AozoraParser implements Closeable {
             matcher.reset();
         }
 
-        SimpleParagraph paragraph = new SimpleParagraph(sequence);
+        Paragraph paragraph = new Paragraph(sequence);
 
         if (lastTag != null) {
             setStyle(lastTag, paragraph);
@@ -342,7 +360,7 @@ public class AozoraParser implements Closeable {
                     resource.setProperties("cover-image");
                     book.setCoverImage(image);
                 } else {
-                    stack.peek().add(new SimpleParagraph(image));
+                    stack.peek().add(new Paragraph(image));
                 }
             }
 
@@ -354,10 +372,34 @@ public class AozoraParser implements Closeable {
         log.warn("{}/Unknown tag: {}", row, tag);
     }
 
-    private void setStyle(String style, SimpleParagraph paragraph) {
-        if (style.equals("地付き")) {
-            paragraph.setStyle("align-end");
-        } else if (style.endsWith("字下げ")) {
+    /**
+     * @param style
+     * @param element
+     */
+    private void setStyle(String style, Style element) {
+        String wordStyle = WORD_STYLES.get(style);
+        if (wordStyle != null) {
+            element.setStyle(wordStyle);
+            return;
+        }
+
+        // other complex styles
+
+        log.debug("{}/Unknown style: {}", row, style);
+    }
+
+    /**
+     * @param style
+     * @param paragraph
+     */
+    private void setStyle(String style, Paragraph paragraph) {
+        String paragraphStyle = PARAGRAPH_STYLES.get(style);
+        if (paragraphStyle != null) {
+            paragraph.setStyle(paragraphStyle);
+            return;
+        }
+
+        if (style.endsWith("字下げ")) {
             int amount = parseInt(style, 0, style.length() - 3) / 2;
             paragraph.setStyle("start-" + amount + "em");
         } else if (style.endsWith("見出し")) {
@@ -379,6 +421,9 @@ public class AozoraParser implements Closeable {
         }
     }
 
+    /**
+     * @param style
+     */
     private void push(String style) {
         context.push(style);
 
@@ -389,6 +434,10 @@ public class AozoraParser implements Closeable {
         log.debug("{}/Start of block: {}", row, style);
     }
 
+    /**
+     * @param style
+     * @throws ParserException
+     */
     private void pop(String style) throws ParserException {
         String current = context.pop();
         if (!current.endsWith(style)) {

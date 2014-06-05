@@ -206,7 +206,7 @@ public class Book {
         Chapter chapter = new Chapter(this, resource);
         chapter.setStyle("p-cover");
         chapter.setType("cover");
-        chapter.add(new SimpleParagraph(coverImage));
+        chapter.add(new Paragraph(coverImage));
         chapters.add(0, chapter);
     }
 

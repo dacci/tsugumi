@@ -14,7 +14,7 @@ import org.w3c.dom.Node;
 /**
  * @author dacci
  */
-public class ParagraphContainer extends SimpleParagraph {
+public class ParagraphContainer extends Paragraph {
 
     private final Collection<Paragraph> paragraphs = new ArrayList<>();
 
