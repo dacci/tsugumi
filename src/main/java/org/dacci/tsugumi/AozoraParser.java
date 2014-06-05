@@ -218,11 +218,17 @@ public class AozoraParser implements Closeable {
             }
 
             matcher = RUBY_PATTERN.matcher(sequence);
-            while (matcher.find(0)) {
-                Ruby ruby =
-                        new Ruby(sequence.subSequence(matcher.start(2),
-                                matcher.end(2)));
+            while (true) {
+                int lastMatch = -1;
+                while (matcher.find()) {
+                    lastMatch = matcher.start();
+                }
+                if (lastMatch < 0) {
+                    break;
+                }
 
+                matcher.find(lastMatch);
+                Ruby ruby = new Ruby(matcher.group(2));
                 int start = matcher.start();
 
                 if (matcher.start(1) == -1) {
@@ -248,6 +254,7 @@ public class AozoraParser implements Closeable {
                 }
 
                 sequence.replace(start, matcher.end(), ruby);
+                matcher.reset();
                 modified = true;
             }
 

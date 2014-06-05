@@ -15,12 +15,12 @@ public class Ruby implements PageElement {
 
     private PageElement text;
 
-    private PageElement ruby;
+    private String ruby;
 
     /**
      * @param string
      */
-    public Ruby(PageElement ruby) {
+    public Ruby(String ruby) {
         this.ruby = ruby;
     }
 
@@ -42,7 +42,7 @@ public class Ruby implements PageElement {
     /**
      * @return the ruby
      */
-    public PageElement getRuby() {
+    public String getRuby() {
         return ruby;
     }
 
@@ -50,7 +50,7 @@ public class Ruby implements PageElement {
      * @param ruby
      *            the ruby to set
      */
-    public void setRuby(PageElement ruby) {
+    public void setRuby(String ruby) {
         this.ruby = ruby;
     }
 
@@ -86,7 +86,7 @@ public class Ruby implements PageElement {
         element.appendChild(document.createElement("rp")).appendChild(
                 document.createTextNode("("));
         element.appendChild(document.createElement("rt")).appendChild(
-                ruby.build(document));
+                document.createTextNode(ruby));
         element.appendChild(document.createElement("rp")).appendChild(
                 document.createTextNode(")"));
 
