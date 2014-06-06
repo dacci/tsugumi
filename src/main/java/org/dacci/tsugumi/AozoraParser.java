@@ -25,6 +25,7 @@ import org.dacci.tsugumi.doc.Book;
 import org.dacci.tsugumi.doc.Chapter;
 import org.dacci.tsugumi.doc.ElementSequence;
 import org.dacci.tsugumi.doc.Image;
+import org.dacci.tsugumi.doc.Link;
 import org.dacci.tsugumi.doc.PageElement;
 import org.dacci.tsugumi.doc.Paragraph;
 import org.dacci.tsugumi.doc.ParagraphContainer;
@@ -215,10 +216,16 @@ public class AozoraParser implements Closeable {
             while (matcher.find(0)) {
                 PageElement text =
                         sequence.subSequence(matcher.start(1), matcher.end(1));
-                Style style = new Style(text);
-                setStyle(matcher.group(2), style);
+                String style = matcher.group(2);
+                PageElement element = null;
+                if (style.equals("リンク")) {
+                    element = new Link(chapter, text);
+                } else {
+                    element = new Style(text);
+                    setStyle(style, (Style) element);
+                }
 
-                sequence.replace(matcher.start(), matcher.end(), style);
+                sequence.replace(matcher.start(), matcher.end(), element);
                 modified = true;
             }
 

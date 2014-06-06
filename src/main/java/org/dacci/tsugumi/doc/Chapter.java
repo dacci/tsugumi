@@ -38,6 +38,13 @@ public class Chapter extends ParagraphContainer {
     }
 
     /**
+     * @return the book
+     */
+    public Book getBook() {
+        return book;
+    }
+
+    /**
      * @return the resource
      */
     public Resource getResource() {
