@@ -8,7 +8,10 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.Character.UnicodeBlock;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -43,13 +46,15 @@ public class AozoraParser implements Closeable {
     private static final Logger log = LoggerFactory
             .getLogger(AozoraParser.class);
 
-    private static final Charset CHARSET = Charset.forName("MS932");
+    private static final Charset CHARSET = Charset.forName("x-SJIS_0213");
+
+    private static final CharsetDecoder DECODER = CHARSET.newDecoder();
 
     private static final Pattern RUBY_PATTERN = Pattern
             .compile("(?:｜(.+?))?《(.+?)》");
 
     private static final Pattern CHAR_REFERENCE_PATTERN = Pattern
-            .compile("［＃.+?\\d+-\\d+-\\d+］");
+            .compile(".［＃.+?(\\d+)-(\\d+)-(\\d+)］");
 
     private static final Pattern ANNOTATION_PATTERN = Pattern
             .compile("(.+?)［＃「\\1」[には](.+?)］");
@@ -96,6 +101,53 @@ public class AozoraParser implements Closeable {
         }
 
         return parsed;
+    }
+
+    /**
+     * @param plane
+     * @param row
+     * @param cell
+     * @throws CharacterCodingException
+     */
+    private static String decodeChar(int plane, int row, int cell)
+            throws CharacterCodingException {
+        if (plane < 1 || 2 < plane) {
+            throw new IllegalArgumentException("illegal plane: " + plane);
+        }
+        if (row < 1 || 94 < row) {
+            throw new IllegalArgumentException("illegal row: " + row);
+        }
+        if (cell < 1 || 94 < cell) {
+            throw new IllegalArgumentException("illegal cell: " + cell);
+        }
+
+        int s1 = (row + 33) / 2, s2 = cell;
+
+        if (1 <= row && row <= 62) {
+            s1 += 112;
+        } else if (63 <= row && row <= 94) {
+            s1 += 176;
+        }
+
+        if (row % 2 == 0) {
+            s2 += 158;
+        } else {
+            s2 += (cell + 32) / 96 + 63;
+        }
+
+        if (plane == 2) {
+            if (1 <= row && row <= 5) {
+                s1 += 0x6F;
+            } else if (8 <= row && row <= 15) {
+                s1 += 0x6C;
+            } else if (78 <= row && row <= 94) {
+                s1 += 0x0D;
+            }
+        }
+
+        ByteBuffer buffer =
+                ByteBuffer.wrap(new byte[] { (byte) s1, (byte) s2 });
+        return DECODER.decode(buffer).toString();
     }
 
     private final Path basePath;
@@ -202,15 +254,28 @@ public class AozoraParser implements Closeable {
     /**
      * @param line
      * @return
+     * @throws ParserException
      */
-    private ElementSequence preprocess(String line) {
-        line = CHAR_REFERENCE_PATTERN.matcher(line).replaceAll("");
+    private ElementSequence preprocess(String line) throws ParserException {
+        StringBuilder buffer = new StringBuilder(line);
+        Matcher matcher = CHAR_REFERENCE_PATTERN.matcher(buffer);
+        while (matcher.find(0)) {
+            int plane = Integer.parseInt(matcher.group(1));
+            int row = Integer.parseInt(matcher.group(2));
+            int cell = Integer.parseInt(matcher.group(3));
 
-        ElementSequence sequence = new ElementSequence(line);
+            try {
+                String decoded = decodeChar(plane, row, cell);
+                buffer.replace(matcher.start(), matcher.end(), decoded);
+            } catch (CharacterCodingException e) {
+                throw new ParserException(this.row, e);
+            }
+        }
+
+        ElementSequence sequence = new ElementSequence(buffer.toString());
 
         while (true) {
             boolean modified = false;
-            Matcher matcher;
 
             matcher = ANNOTATION_PATTERN.matcher(sequence);
             while (matcher.find(0)) {
