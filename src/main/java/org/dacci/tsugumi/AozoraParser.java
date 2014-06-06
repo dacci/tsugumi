@@ -64,23 +64,18 @@ public class AozoraParser implements Closeable {
     private static final Pattern TAG_PATTERN = Pattern.compile("［＃(.+?)］");
 
     private static final Pattern IMAGE_TAG_PATTERN = Pattern
-            .compile("(.*?)（(.+?)(?:、縦(\\d+)×横(\\d+))?）(?:入る)?");
+            .compile("(.*?)（(.+?)(?:、横(\\d+)×縦(\\d+))?(?:、.+)*）(?:入る)?");
 
-    private static final Map<String, String> WORD_STYLES;
-
-    private static final Map<String, String> PARAGRAPH_STYLES;
+    private static final Map<String, String> STYLES;
 
     static {
-        Map<String, String> map;
-
-        map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         map.put("ゴシック体", "gfont");
         map.put("傍点", "em-sesame");
-        WORD_STYLES = Collections.unmodifiableMap(map);
-
-        map = new HashMap<>();
         map.put("地付き", "align-end");
-        PARAGRAPH_STYLES = Collections.unmodifiableMap(map);
+        map.put("横組み", "sideways");
+        map.put("罫囲い", "k-solid");
+        STYLES = Collections.unmodifiableMap(map);
     }
 
     /**
@@ -468,7 +463,7 @@ public class AozoraParser implements Closeable {
      * @param element
      */
     private void setStyle(String style, Style element) {
-        String wordStyle = WORD_STYLES.get(style);
+        String wordStyle = STYLES.get(style);
         if (wordStyle != null) {
             element.setStyle(wordStyle);
             return;
@@ -490,7 +485,7 @@ public class AozoraParser implements Closeable {
      * @param paragraph
      */
     private void setStyle(String style, Paragraph paragraph) {
-        String paragraphStyle = PARAGRAPH_STYLES.get(style);
+        String paragraphStyle = STYLES.get(style);
         if (paragraphStyle != null) {
             paragraph.setStyle(paragraphStyle);
             return;
