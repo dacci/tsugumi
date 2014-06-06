@@ -21,6 +21,9 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,6 +65,9 @@ public class AozoraParser implements Closeable {
             .compile("(.+?)［＃「\\1」[には](.+?)］");
 
     private static final Pattern TAG_PATTERN = Pattern.compile("［＃(.+?)］");
+
+    private static final Pattern INLINE_TAG_PATTERN = Pattern
+            .compile("［＃(?!ここで)(.+?)］");
 
     private static final Pattern IMAGE_TAG_PATTERN = Pattern
             .compile("(.*?)（(.+?)(?:、横(\\d+)×縦(\\d+))?(?:、.+)*）(?:入る)?");
@@ -281,23 +287,6 @@ public class AozoraParser implements Closeable {
         while (true) {
             boolean modified = false;
 
-            matcher = ANNOTATION_PATTERN.matcher(sequence);
-            while (matcher.find(0)) {
-                PageElement text =
-                        sequence.subSequence(matcher.start(1), matcher.end(1));
-                String style = matcher.group(2);
-                PageElement element = null;
-                if (style.equals("リンク")) {
-                    element = new Link(chapter, text);
-                } else {
-                    element = new Style(text);
-                    setStyle(style, (Style) element);
-                }
-
-                sequence.replace(matcher.start(), matcher.end(), element);
-                modified = true;
-            }
-
             matcher = RUBY_PATTERN.matcher(sequence);
             while (true) {
                 int lastMatch = -1;
@@ -336,6 +325,82 @@ public class AozoraParser implements Closeable {
 
                 sequence.replace(start, matcher.end(), ruby);
                 matcher.reset();
+                modified = true;
+            }
+
+            matcher = INLINE_TAG_PATTERN.matcher(sequence);
+            NavigableMap<Integer, String> tagMap = new TreeMap<>();
+            while (true) {
+                while (matcher.find()) {
+                    tagMap.put(matcher.start(), matcher.group(1));
+                }
+                if (tagMap.isEmpty()) {
+                    break;
+                }
+
+                Entry<Integer, String> endEntry = null;
+                for (Entry<Integer, String> entry : tagMap.entrySet()) {
+                    if (entry.getValue().endsWith("終わり")) {
+                        endEntry = entry;
+                        break;
+                    }
+                }
+                if (endEntry == null) {
+                    break;
+                }
+
+                String tag = endEntry.getValue();
+                tag = tag.substring(0, tag.length() - 3);
+
+                Integer lastKey = endEntry.getKey();
+                Entry<Integer, String> startEntry = null;
+                while (true) {
+                    Entry<Integer, String> entry = tagMap.lowerEntry(lastKey);
+                    if (entry.getValue().equals(tag)) {
+                        startEntry = entry;
+                        break;
+                    }
+
+                    lastKey = entry.getKey();
+                }
+                if (startEntry == null) {
+                    throw new ParserException(row, "Start tag not found: " +
+                            endEntry.getValue());
+                }
+
+                Matcher startMatcher = TAG_PATTERN.matcher(sequence);
+                startMatcher.find(startEntry.getKey());
+                Matcher endMatcher = TAG_PATTERN.matcher(sequence);
+                endMatcher.find(endEntry.getKey());
+
+                ElementSequence text =
+                        sequence.subSequence(startMatcher.end(),
+                                endMatcher.start());
+                Style element = new Style(text);
+                setStyle(tag, element);
+
+                sequence.replace(startMatcher.start(), endMatcher.end(),
+                        element);
+                modified = true;
+
+                matcher.reset();
+                tagMap.clear();
+            }
+
+            matcher = ANNOTATION_PATTERN.matcher(sequence);
+            while (matcher.find(0)) {
+                PageElement text =
+                        sequence.subSequence(matcher.start(1), matcher.end(1));
+                String style = matcher.group(2);
+                PageElement element = null;
+                if (style.equals("リンク")) {
+                    element = new Link(chapter, text);
+                } else {
+                    element = new Style(text);
+                    setStyle(style, (Style) element);
+                }
+
+                sequence.replace(matcher.start(), matcher.end(), element);
                 modified = true;
             }
 
