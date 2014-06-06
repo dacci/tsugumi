@@ -79,7 +79,9 @@ public class AozoraParser implements Closeable {
         map.put("ゴシック体", "gfont");
         map.put("傍点", "em-sesame");
         map.put("地付き", "align-end");
+        map.put("小さな文字", "font-075per");
         map.put("横組み", "sideways");
+        map.put("縦中横", "tcy");
         map.put("罫囲い", "k-solid");
         STYLES = Collections.unmodifiableMap(map);
     }
@@ -555,8 +557,17 @@ public class AozoraParser implements Closeable {
         }
 
         if (style.endsWith("字下げ")) {
-            int amount = parseInt(style, 0, style.length() - 3) / 2;
-            paragraph.setStyle("start-" + amount + "em");
+            double amount = parseInt(style, 0, style.length() - 3) / 2.0;
+            int integer = (int) amount;
+            int decimal = (int) (amount % 1 * 10);
+
+            StringBuilder builder =
+                    new StringBuilder("start-").append(integer).append("em");
+            if (decimal != 0) {
+                builder.append(decimal * 10);
+            }
+
+            paragraph.setStyle(builder.toString());
         } else if (style.endsWith("見出し")) {
             switch (style.charAt(0)) {
             case '大':
