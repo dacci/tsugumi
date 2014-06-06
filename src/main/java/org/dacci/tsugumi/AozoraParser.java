@@ -46,15 +46,17 @@ public class AozoraParser implements Closeable {
     private static final Logger log = LoggerFactory
             .getLogger(AozoraParser.class);
 
-    private static final Charset CHARSET = Charset.forName("x-SJIS_0213");
+    private static final Charset CHARSET = Charset.forName("MS932");
 
-    private static final CharsetDecoder DECODER = CHARSET.newDecoder();
+    private static final CharsetDecoder DECODER = Charset
+            .forName("x-SJIS_0213").newDecoder();
 
     private static final Pattern RUBY_PATTERN = Pattern
             .compile("(?:｜(.+?))?《(.+?)》");
 
     private static final Pattern CHAR_REFERENCE_PATTERN = Pattern
-            .compile(".［＃.+?(\\d+)-(\\d+)-(\\d+)］");
+            .compile(".［＃.+?(?:(\\d+)-(\\d+)-(\\d+)|"
+                    + "U\\+([0-9A-Fa-f]+)(?:、\\d+-\\d+)?)］");
 
     private static final Pattern ANNOTATION_PATTERN = Pattern
             .compile("(.+?)［＃「\\1」[には](.+?)］");
@@ -260,16 +262,23 @@ public class AozoraParser implements Closeable {
         StringBuilder buffer = new StringBuilder(line);
         Matcher matcher = CHAR_REFERENCE_PATTERN.matcher(buffer);
         while (matcher.find(0)) {
-            int plane = Integer.parseInt(matcher.group(1));
-            int row = Integer.parseInt(matcher.group(2));
-            int cell = Integer.parseInt(matcher.group(3));
+            String decoded;
+            if (matcher.start(1) != -1) {
+                int plane = Integer.parseInt(matcher.group(1));
+                int row = Integer.parseInt(matcher.group(2));
+                int cell = Integer.parseInt(matcher.group(3));
 
-            try {
-                String decoded = decodeChar(plane, row, cell);
-                buffer.replace(matcher.start(), matcher.end(), decoded);
-            } catch (CharacterCodingException e) {
-                throw new ParserException(this.row, e);
+                try {
+                    decoded = decodeChar(plane, row, cell);
+                } catch (CharacterCodingException e) {
+                    throw new ParserException(this.row, e);
+                }
+            } else {
+                int codePoint = Integer.parseInt(matcher.group(4), 16);
+                decoded = String.valueOf(Character.toChars(codePoint));
             }
+
+            buffer.replace(matcher.start(), matcher.end(), decoded);
         }
 
         ElementSequence sequence = new ElementSequence(buffer.toString());
