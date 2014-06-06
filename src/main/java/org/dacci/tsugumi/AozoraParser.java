@@ -400,9 +400,15 @@ public class AozoraParser implements Closeable {
             return;
         }
 
-        // other complex styles
-
-        log.debug("{}/Unknown style: {}", row, style);
+        if (style.endsWith("段階大きい文字")) {
+            int amount = parseInt(style, 0, style.length() - 7) + 10;
+            element.setStyle("font-" + amount + "0per");
+        } else if (style.endsWith("段階小さい文字")) {
+            int amount = 10 - parseInt(style, 0, style.length() - 7);
+            element.setStyle("font-0" + amount + "per");
+        } else {
+            log.warn("{}/Unknown style: {}", row, style);
+        }
     }
 
     /**
