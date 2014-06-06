@@ -4,9 +4,6 @@
 
 package org.dacci.tsugumi.doc;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
 import org.w3c.dom.Document;
 
 /**
@@ -19,10 +16,7 @@ public class PageResource extends Resource {
     /**
      * @param source
      */
-    public PageResource(Path destination) {
-        super(Paths.get(".xhtml"));
-
-        setDestination(destination);
+    PageResource() {
     }
 
     /**
@@ -38,5 +32,15 @@ public class PageResource extends Resource {
      */
     public void setDocument(Document document) {
         this.document = document;
+    }
+
+    @Override
+    public String getFileName() {
+        return getId() + ".xhtml";
+    }
+
+    @Override
+    public String getMediaType() {
+        return "application/xhtml+xml";
     }
 }

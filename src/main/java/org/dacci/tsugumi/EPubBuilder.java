@@ -19,12 +19,9 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -41,8 +38,10 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.dacci.tsugumi.doc.Book;
 import org.dacci.tsugumi.doc.Chapter;
+import org.dacci.tsugumi.doc.ImageResource;
 import org.dacci.tsugumi.doc.PageResource;
 import org.dacci.tsugumi.doc.Resource;
+import org.dacci.tsugumi.doc.StyleResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -71,17 +70,9 @@ public class EPubBuilder {
 
     private static final Path IMAGE_PATH = ITEM_PATH.resolve("image");
 
-    private static final Collection<String> styles;
+    private static final Path XHTML_PATH = ITEM_PATH.resolve("xhtml");
 
-    static {
-        Set<String> set = new HashSet<>();
-        set.add("book-style");
-        set.add("style-advance");
-        set.add("style-check");
-        set.add("style-reset");
-        set.add("style-standard");
-        styles = Collections.unmodifiableCollection(set);
-    }
+    private static final Path STYLE_PATH = ITEM_PATH.resolve("style");
 
     private final DocumentBuilder builder;
 
@@ -147,35 +138,45 @@ public class EPubBuilder {
         log.debug("Resolving resources");
 
         int index = 0;
-        for (Resource resource : book.getResources()) {
-            if (resource instanceof PageResource) {
-                continue;
-            }
-
-            if (resource.getId() == null) {
-                String id = String.format("img-%03d", ++index);
-                resource.setId(id);
-            }
-
-            if (resource.getDestination() == null) {
-                String extension = "";
-                switch (resource.getMediaType()) {
-                case "image/gif":
-                    extension = ".gif";
+        for (Chapter chapter : book.getChapters()) {
+            String id = null;
+            String title = chapter.getProperty(Chapter.TITLE);
+            if (title != null) {
+                switch (title) {
+                case "表紙":
+                    id = "p-cover";
                     break;
 
-                case "image/jpeg":
-                    extension = ".jpg";
-                    break;
-
-                case "image/png":
-                    extension = ".png";
+                case "目次":
+                    id = "p-toc";
                     break;
                 }
-
-                resource.setDestination(IMAGE_PATH.resolve(resource.getId() +
-                        extension));
             }
+
+            if (id == null) {
+                id = String.format("p-%03d", ++index);
+            }
+
+            chapter.getResource().setId(id);
+        }
+
+        index = 0;
+        for (Resource resource : book.getResources()) {
+            Path basePath = null;
+
+            if (resource instanceof PageResource) {
+                basePath = XHTML_PATH;
+            } else if (resource instanceof ImageResource) {
+                basePath = IMAGE_PATH;
+
+                if (resource.getId() == null) {
+                    resource.setId(String.format("img-%03d", ++index));
+                }
+            } else if (resource instanceof StyleResource) {
+                basePath = STYLE_PATH;
+            }
+
+            resource.setDestination(basePath.resolve(resource.getFileName()));
         }
 
         log.debug("Building pages");
@@ -316,19 +317,17 @@ public class EPubBuilder {
         element.setAttribute("properties", "nav");
         manifest.appendChild(element);
 
-        for (String style : styles) {
-            element = document.createElement("item");
-            element.setAttribute("id", style);
-            element.setAttribute("media-type", "text/css");
-            element.setAttribute("href", "style/" + style + ".css");
-            manifest.appendChild(element);
-        }
-
         for (Resource resource : resources) {
             element = document.createElement("item");
             element.setAttribute("id", resource.getId());
             element.setAttribute("media-type", resource.getMediaType());
             element.setAttribute("href", resource.getHref(ITEM_PATH));
+
+            String properties = resource.getProperties();
+            if (properties != null) {
+                element.setAttribute("properties", properties);
+            }
+
             manifest.appendChild(element);
 
             if (resource instanceof PageResource) {
@@ -440,7 +439,7 @@ public class EPubBuilder {
     private void saveTo(Path path) throws IOException {
         Path metaInfPath = Files.createDirectories(path.resolve("META-INF"));
         Path itemPath = Files.createDirectories(path.resolve("item"));
-        Path stylePath = Files.createDirectories(itemPath.resolve("style"));
+        Files.createDirectories(itemPath.resolve("style"));
         Files.createDirectories(itemPath.resolve("image"));
         Files.createDirectories(itemPath.resolve("xhtml"));
 
@@ -463,27 +462,37 @@ public class EPubBuilder {
         try (OutputStream out =
                 Files.newOutputStream(itemPath
                         .resolve("navigation-documents.xhtml"))) {
+            out.write(DOCTYPE_HTML5);
+            out.write(LINE_SEPARATOR);
+
             transformer.transform(new DOMSource(navigationDocument),
                     new StreamResult(out));
         } catch (TransformerException e) {
             throw new IOException(e);
         }
 
-        ClassLoader loader = getClass().getClassLoader();
-        for (String style : styles) {
-            String name = style + ".css";
-            try (InputStream in = loader.getResourceAsStream(name)) {
-                Files.copy(in, stylePath.resolve(name),
-                        StandardCopyOption.REPLACE_EXISTING);
-            }
-        }
-
         for (Resource resource : resources) {
             if (resource instanceof PageResource) {
                 writePage(path, (PageResource) resource);
-            } else {
-                writeResource(path, resource);
+            } else if (resource instanceof ImageResource) {
+                writeResource(path, (ImageResource) resource);
+            } else if (resource instanceof StyleResource) {
+                writeResource(path, (StyleResource) resource);
             }
+        }
+    }
+
+    /**
+     * @param path
+     * @param resource
+     */
+    private void writeResource(Path path, StyleResource resource)
+            throws IOException {
+        Path destination = path.resolve(resource.getDestination().toString());
+        try (InputStream in =
+                getClass().getClassLoader().getResourceAsStream(
+                        resource.getFileName())) {
+            Files.copy(in, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -492,7 +501,8 @@ public class EPubBuilder {
      * @param resource
      * @throws IOException
      */
-    private void writeResource(Path path, Resource resource) throws IOException {
+    private void writeResource(Path path, ImageResource resource)
+            throws IOException {
         Path destination = path.resolve(resource.getDestination().toString());
         Files.copy(resource.getSource(), destination,
                 StandardCopyOption.REPLACE_EXISTING);

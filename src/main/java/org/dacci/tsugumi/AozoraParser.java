@@ -131,6 +131,11 @@ public class AozoraParser implements Closeable {
      */
     public Book parse() throws ParserException {
         book = new Book();
+        book.loadStyle("book-style");
+        book.loadStyle("style-reset");
+        book.loadStyle("style-standard");
+        book.loadStyle("style-advance");
+
         chapter = book.addChapter();
 
         row = 1;
@@ -282,10 +287,8 @@ public class AozoraParser implements Closeable {
         String lastTag = null;
         while (matcher.find()) {
             if (matcher.start() > 0) {
-                ElementSequence subSequence =
-                        sequence.subSequence(0, matcher.start());
-
-                Paragraph paragraph = new Paragraph(subSequence);
+                Paragraph paragraph =
+                        new Paragraph(sequence.subSequence(0, matcher.start()));
 
                 if (lastTag != null) {
                     setStyle(lastTag, paragraph);
@@ -345,7 +348,7 @@ public class AozoraParser implements Closeable {
         Matcher matcher = IMAGE_TAG_PATTERN.matcher(tag);
         if (matcher.matches()) {
             String path = matcher.group(2);
-            Resource resource = book.loadResource(basePath.resolve(path));
+            Resource resource = book.loadImage(basePath.resolve(path));
             Image image = new Image(resource, chapter.getResource());
 
             String width = matcher.group(3);

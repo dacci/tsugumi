@@ -6,7 +6,6 @@ package org.dacci.tsugumi.doc;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -138,11 +137,7 @@ public class Book {
      * @return
      */
     public Chapter addChapter() {
-        String id = String.format("p-%03d", ++nextChapter);
-        Path path = Paths.get(".", "item", "xhtml", id + ".xhtml");
-
-        PageResource resource = new PageResource(path);
-        resource.setId(id);
+        PageResource resource = new PageResource();
         resources.add(resource);
 
         Chapter chapter = new Chapter(this, resource);
@@ -154,15 +149,38 @@ public class Book {
      * @param path
      * @return
      */
-    public Resource loadResource(Path path) {
+    public ImageResource loadImage(Path path) {
         for (Resource resource : resources) {
-            if (path.equals(resource.getSource())) {
-                return resource;
+            if (!(resource instanceof ImageResource)) {
+                continue;
+            }
+
+            ImageResource imageResource = (ImageResource) resource;
+            if (path.equals(imageResource.getSource())) {
+                return imageResource;
             }
         }
 
-        Resource resource = new Resource(path);
+        ImageResource resource = new ImageResource(path);
         resources.add(resource);
+
+        return resource;
+    }
+
+    /**
+     * @param id
+     * @return
+     */
+    public StyleResource loadStyle(String id) {
+        for (Resource resource : resources) {
+            if (id.equals(resource.getId())) {
+                return (StyleResource) resource;
+            }
+        }
+
+        StyleResource resource = new StyleResource(id);
+        resources.add(resource);
+
         return resource;
     }
 
@@ -198,14 +216,14 @@ public class Book {
 
         this.coverImage = coverImage;
 
-        Path path = Paths.get(".", "item", "xhtml", "p-cover.xhtml");
-        PageResource resource = new PageResource(path);
+        PageResource resource = new PageResource();
         resource.setId("p-cover");
         resources.add(0, resource);
 
         Chapter chapter = new Chapter(this, resource);
         chapter.setStyle("p-cover");
         chapter.setType("cover");
+        chapter.setProperty(Chapter.TITLE, "表紙");
         chapter.add(new Paragraph(coverImage));
         chapters.add(0, chapter);
     }

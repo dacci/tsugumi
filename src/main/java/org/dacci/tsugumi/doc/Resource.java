@@ -9,29 +9,13 @@ import java.nio.file.Path;
 /**
  * @author dacci
  */
-public class Resource {
-
-    private final Path source;
+public abstract class Resource {
 
     private String id;
 
     private String properties;
 
     private Path destination;
-
-    /**
-     * 
-     */
-    Resource(Path source) {
-        this.source = source;
-    }
-
-    /**
-     * @return the source
-     */
-    public Path getSource() {
-        return source;
-    }
 
     /**
      * @return the id
@@ -89,24 +73,10 @@ public class Resource {
     /**
      * @return
      */
-    public String getMediaType() {
-        String name = source.getFileName().toString().toLowerCase();
+    public abstract String getFileName();
 
-        switch (name.substring(name.lastIndexOf('.') + 1)) {
-        case "gif":
-            return "image/gif";
-
-        case "jpg":
-        case "jpeg":
-            return "image/jpeg";
-
-        case "png":
-            return "image/png";
-
-        case "xhtml":
-            return "application/xhtml+xml";
-        }
-
-        return "application/octet-stream";
-    }
+    /**
+     * @return
+     */
+    public abstract String getMediaType();
 }
