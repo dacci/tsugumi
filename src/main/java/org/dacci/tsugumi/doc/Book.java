@@ -34,8 +34,6 @@ public class Book {
 
     private String translator;
 
-    private Image coverImage;
-
     /**
      * @return the title
      */
@@ -189,43 +187,6 @@ public class Book {
      */
     public Collection<Resource> getResources() {
         return resources;
-    }
-
-    /**
-     * @return the coverImage
-     */
-    public Image getCoverImage() {
-        return coverImage;
-    }
-
-    /**
-     * @return
-     */
-    public boolean hasCoverImage() {
-        return coverImage != null;
-    }
-
-    /**
-     * @param coverImage
-     *            the coverImage to set
-     */
-    public void setCoverImage(Image coverImage) {
-        if (this.coverImage != null) {
-            throw new IllegalStateException("cover image is already set");
-        }
-
-        this.coverImage = coverImage;
-
-        PageResource resource = new PageResource();
-        resource.setId("p-cover");
-        resources.add(0, resource);
-
-        Chapter chapter = new Chapter(this, resource);
-        chapter.setStyle("p-cover");
-        chapter.setType("cover");
-        chapter.setProperty(Chapter.TITLE, "表紙");
-        chapter.add(new Paragraph(coverImage));
-        chapters.add(0, chapter);
     }
 
     /**

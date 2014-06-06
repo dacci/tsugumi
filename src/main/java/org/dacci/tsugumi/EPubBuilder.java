@@ -145,6 +145,8 @@ public class EPubBuilder {
                 switch (title) {
                 case "表紙":
                     id = "p-cover";
+                    chapter.setStyle("p-cover");
+                    chapter.setType("cover");
                     break;
 
                 case "目次":
