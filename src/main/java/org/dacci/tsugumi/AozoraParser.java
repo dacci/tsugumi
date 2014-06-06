@@ -70,7 +70,7 @@ public class AozoraParser implements Closeable {
             .compile("［＃(?!ここで)(.+?)］");
 
     private static final Pattern IMAGE_TAG_PATTERN = Pattern
-            .compile("(.*?)（(.+?)(?:、横(\\d+)×縦(\\d+))?(?:、.+)*）(?:入る)?");
+            .compile("［＃(.+)?（(.+?)(?:、横(\\d+)×縦(\\d+))?(?:、.+)*）(?:入る)?］");
 
     private static final Map<String, String> STYLES;
 
@@ -409,6 +409,38 @@ public class AozoraParser implements Closeable {
             }
         }
 
+        matcher = IMAGE_TAG_PATTERN.matcher(sequence);
+        while (matcher.find(0)) {
+            String path = matcher.group(2);
+            Resource resource = book.loadImage(basePath.resolve(path));
+            Image image = new Image(resource, chapter.getResource());
+
+            String width = matcher.group(3);
+            if (width != null) {
+                image.setWidth(Integer.parseInt(width));
+            }
+
+            String height = matcher.group(4);
+            if (height != null) {
+                image.setHeight(Integer.parseInt(height));
+            }
+
+            String title = matcher.group(1);
+            if (title != null) {
+                image.setTitle(title);
+
+                if (title.equals("表紙")) {
+                    resource.setId("cover");
+                    resource.setProperties("cover-image");
+                }
+            }
+
+            sequence.replace(matcher.start(), matcher.end(), image);
+
+            log.debug("{}/Load image: {}, title={}, width={}, height={}", row,
+                    path, title, width, height);
+        }
+
         return sequence;
     }
 
@@ -483,40 +515,6 @@ public class AozoraParser implements Closeable {
             chapter.setProperty(name, value);
 
             log.debug("{}/Set property: {}, {}", row, name, value);
-            return;
-        }
-
-        Matcher matcher = IMAGE_TAG_PATTERN.matcher(tag);
-        if (matcher.matches()) {
-            String path = matcher.group(2);
-            Resource resource = book.loadImage(basePath.resolve(path));
-            Image image = new Image(resource, chapter.getResource());
-
-            String width = matcher.group(3);
-            if (width != null) {
-                image.setWidth(Integer.parseInt(width));
-            }
-
-            String height = matcher.group(4);
-            if (height != null) {
-                image.setHeight(Integer.parseInt(height));
-            }
-
-            String alt = matcher.group(1);
-            if (alt != null) {
-                image.setTitle(alt);
-
-                if (alt.equals("表紙")) {
-                    resource.setId("cover");
-                    resource.setProperties("cover-image");
-                    book.setCoverImage(image);
-                } else {
-                    stack.peek().add(new Paragraph(image));
-                }
-            }
-
-            log.debug("{}/Load image: {}, alt={}, width={}, height={}", row,
-                    path, alt, width, height);
             return;
         }
 

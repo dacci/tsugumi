@@ -98,7 +98,7 @@ public class Image implements PageElement {
 
     @Override
     public char charAt(int index) {
-        throw new UnsupportedOperationException();
+        return '\0';
     }
 
     @Override
