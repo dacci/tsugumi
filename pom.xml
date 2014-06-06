@@ -84,4 +84,33 @@
       <version>1.2</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>development</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <build>
+        <resources>
+          <resource>
+            <directory>src/development/resources</directory>
+          </resource>
+          <resource>
+            <directory>src/main/resources</directory>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+
+    <profile>
+      <id>production</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <properties>
+        <maven.test.skip>true</maven.test.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>
