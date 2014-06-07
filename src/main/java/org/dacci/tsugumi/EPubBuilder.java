@@ -263,9 +263,52 @@ public class EPubBuilder {
         element.appendChild(document.createTextNode(book.getTitle()));
         metadata.appendChild(element);
 
+        element = document.createElement("meta");
+        element.setAttribute("refines", "#title");
+        element.setAttribute("property", "title-type");
+        element.appendChild(document.createTextNode("main"));
+        metadata.appendChild(element);
+
+        String subtitle = book.getSubtitle();
+        if (subtitle != null && !subtitle.isEmpty()) {
+            element = document.createElement("dc:title");
+            element.setAttribute("id", "subtitle");
+            element.appendChild(document.createTextNode(book.getTitle()));
+            metadata.appendChild(element);
+
+            element = document.createElement("meta");
+            element.setAttribute("refines", "#subtitle");
+            element.setAttribute("property", "title-type");
+            element.appendChild(document.createTextNode("subtitle"));
+            metadata.appendChild(element);
+        }
+
         element = document.createElement("dc:creator");
+        element.setAttribute("id", "author");
         element.appendChild(document.createTextNode(book.getAuthor()));
         metadata.appendChild(element);
+
+        element = document.createElement("meta");
+        element.setAttribute("refines", "#author");
+        element.setAttribute("property", "role");
+        element.setAttribute("scheme", "marc:relators");
+        element.appendChild(document.createTextNode("aut"));
+        metadata.appendChild(element);
+
+        String translator = book.getTranslator();
+        if (translator != null && !translator.isEmpty()) {
+            element = document.createElement("dc:creator");
+            element.setAttribute("id", "translator");
+            element.appendChild(document.createTextNode(translator));
+            metadata.appendChild(element);
+
+            element = document.createElement("meta");
+            element.setAttribute("refines", "#translator");
+            element.setAttribute("property", "role");
+            element.setAttribute("scheme", "marc:relators");
+            element.appendChild(document.createTextNode("trl"));
+            metadata.appendChild(element);
+        }
 
         element = document.createElement("dc:language");
         element.appendChild(document.createTextNode("ja"));
