@@ -306,15 +306,20 @@ public class AozoraParser implements Closeable {
                 if (matcher.start(1) == -1) {
                     int textEnd = matcher.start(2) - 1;
                     start = textEnd - 1;
-                    UnicodeBlock block =
-                            UnicodeBlock.of(sequence.charAt(start));
+                    UnicodeBlock block = null;
 
-                    for (; start >= 0; --start) {
-                        if (start == 0) {
-                            break;
+                    for (; start > 0; --start) {
+                        char character = sequence.charAt(start - 1);
+                        if (character == '々') {
+                            continue;
                         }
 
-                        if (UnicodeBlock.of(sequence.charAt(start - 1)) != block) {
+                        if (block == null) {
+                            block = UnicodeBlock.of(character);
+                            continue;
+                        }
+
+                        if (UnicodeBlock.of(character) != block) {
                             break;
                         }
                     }
