@@ -273,7 +273,7 @@ public class EPubBuilder {
         if (subtitle != null && !subtitle.isEmpty()) {
             element = document.createElement("dc:title");
             element.setAttribute("id", "subtitle");
-            element.appendChild(document.createTextNode(book.getTitle()));
+            element.appendChild(document.createTextNode(subtitle));
             metadata.appendChild(element);
 
             element = document.createElement("meta");
