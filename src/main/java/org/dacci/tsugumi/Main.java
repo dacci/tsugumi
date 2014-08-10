@@ -17,6 +17,8 @@ import org.dacci.tsugumi.doc.Book;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.qos.logback.classic.Level;
+
 /**
  * @author dacci
  */
@@ -32,9 +34,18 @@ public final class Main {
         options.addOption("d", "directory", false, "Save as directory.");
         options.addOption("h", "horizontal", false,
                 "Output book witten horizontally.");
+        options.addOption("v", "verbose", false, "Verbose logging.");
 
         try {
             CommandLine commandLine = new GnuParser().parse(options, args);
+
+            if (commandLine.hasOption("v")) {
+                ch.qos.logback.classic.Logger rootLogger =
+                        (ch.qos.logback.classic.Logger) LoggerFactory
+                                .getLogger(Logger.ROOT_LOGGER_NAME);
+                rootLogger.setLevel(Level.DEBUG);
+            }
+
             main(commandLine);
         } catch (ParseException e) {
             e.printStackTrace();
