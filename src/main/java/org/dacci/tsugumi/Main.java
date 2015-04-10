@@ -33,7 +33,7 @@ public final class Main {
         Options options = new Options();
         options.addOption("d", "directory", false, "Save as directory.");
         options.addOption("h", "horizontal", false,
-                "Output book witten horizontally.");
+                "Output book written horizontally.");
         options.addOption("v", "verbose", false, "Verbose logging.");
 
         try {
