@@ -34,6 +34,10 @@ public class Book {
 
     private String translator;
 
+    private String series;
+
+    private String position;
+
     /**
      * @return the title
      */
@@ -122,6 +126,36 @@ public class Book {
      */
     public void setTranslator(String translator) {
         this.translator = translator;
+    }
+
+    /**
+     * @return the series
+     */
+    public String getSeries() {
+        return series;
+    }
+
+    /**
+     * @param series
+     *            the series to set
+     */
+    public void setSeries(String collection) {
+        this.series = collection;
+    }
+
+    /**
+     * @return the position
+     */
+    public String getPosition() {
+        return position;
+    }
+
+    /**
+     * @param position
+     *            the position to set
+     */
+    public void setPosition(String position) {
+        this.position = position;
     }
 
     /**

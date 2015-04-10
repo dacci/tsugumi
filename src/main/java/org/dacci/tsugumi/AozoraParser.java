@@ -347,7 +347,12 @@ public class AozoraParser implements Closeable {
 
                 Entry<Integer, String> endEntry = null;
                 for (Entry<Integer, String> entry : tagMap.entrySet()) {
-                    if (entry.getValue().endsWith("終わり")) {
+                    String value = entry.getValue();
+                    if (value.equals("本文終わり")) {
+                        break;
+                    }
+
+                    if (value.endsWith("終わり")) {
                         endEntry = entry;
                         break;
                     }
@@ -505,6 +510,12 @@ public class AozoraParser implements Closeable {
 
             log.debug("{}/Page break", row);
             return;
+
+        case "本文終わり":
+            chapter = null;
+
+            log.debug("{}/End of document", row);
+            return;
         }
 
         if (tag.startsWith("ここから")) {
@@ -519,7 +530,20 @@ public class AozoraParser implements Closeable {
         if (index > 0) {
             String name = tag.substring(0, index);
             String value = tag.substring(index + 1);
-            chapter.setProperty(name, value);
+
+            if (chapter != null) {
+                chapter.setProperty(name, value);
+            } else {
+                switch (name) {
+                case "シリーズ":
+                    book.setSeries(value);
+                    break;
+
+                case "巻数":
+                    book.setPosition(value);
+                    break;
+                }
+            }
 
             log.debug("{}/Set property: {}, {}", row, name, value);
             return;

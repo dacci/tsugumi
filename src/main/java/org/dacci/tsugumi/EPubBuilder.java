@@ -283,6 +283,42 @@ public class EPubBuilder {
             metadata.appendChild(element);
         }
 
+        String collection = book.getSeries();
+        if (collection != null && !collection.isEmpty()) {
+            element = document.createElement("meta");
+            element.setAttribute("property", "belongs-to-collection");
+            element.setAttribute("id", "collection");
+            element.setTextContent(collection);
+            metadata.appendChild(element);
+
+            element = document.createElement("meta");
+            element.setAttribute("refines", "#collection");
+            element.setAttribute("property", "collection-type");
+            element.setTextContent("series");
+            metadata.appendChild(element);
+
+            // Calibre compatible
+            element = document.createElement("meta");
+            element.setAttribute("name", "calibre:series");
+            element.setAttribute("content", collection);
+            metadata.appendChild(element);
+
+            String position = book.getPosition();
+            if (position != null && !position.isEmpty()) {
+                element = document.createElement("meta");
+                element.setAttribute("refines", "#collection");
+                element.setAttribute("property", "group-position");
+                element.setTextContent(position);
+                metadata.appendChild(element);
+
+                // Calibre compatible
+                element = document.createElement("meta");
+                element.setAttribute("name", "calibre:series_index");
+                element.setAttribute("content", position);
+                metadata.appendChild(element);
+            }
+        }
+
         element = document.createElement("dc:creator");
         element.setAttribute("id", "author");
         element.appendChild(document.createTextNode(book.getAuthor()));
