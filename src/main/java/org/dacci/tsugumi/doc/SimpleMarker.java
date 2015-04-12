@@ -7,7 +7,6 @@ package org.dacci.tsugumi.doc;
 /**
  * @author dacci
  */
-public interface Style {
-
-    Style copy();
+public enum SimpleMarker implements Marker {
+    LineBreak
 }

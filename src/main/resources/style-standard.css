@@ -7,10 +7,10 @@
 全作品共通の基本スタイル
 
 【CSSファイルバージョン】
-ver.1.3.0
+ver.1.3.1
 
 【当ファイル更新時の電書協EPUB 3 制作ガイドバージョン】
-ver.1.1.1
+ver.1.1.3
 
 【細目】
 ・組み方向指定
@@ -61,6 +61,12 @@ ver.1.1.1
 ・【参考】回り込み
 
 【更新履歴】
+2014/11/01 ver.1.3.1
+・「行揃え」の「-epub(webkit)-text-align-last」を削除
+・「縦中横」を修正
+・「文字の向き」の「.upright-1」を修正
+・「文字の向き」の「.sideways」を修正
+
 2012/12/07 ver.1.3.0
 ・ファイル更新時の電書協EPUB 3 制作ガイドバージョン表記を追加
 
@@ -158,27 +164,19 @@ html {
 .align-left,
 .align-start {
   text-align: left;
-  -webkit-text-align-last: left;
-  -epub-text-align-last:   left;
 }
 /* 行中揃え */
 .align-center {
   text-align: center;
-  -webkit-text-align-last: auto;
-  -epub-text-align-last:   auto;
 }
 /* 行末揃え */
 .align-right,
 .align-end {
   text-align: right;
-  -webkit-text-align-last: auto;
-  -epub-text-align-last:   auto;
 }
 /* 両端揃え（行末は行頭揃え） */
 .align-justify {
   text-align: justify;
-  -webkit-text-align-last: left;
-  -epub-text-align-last:   left;
 }
 
 
@@ -309,8 +307,10 @@ img.gaiji-wide {
 /* 縦中横
 ---------------------------------------------------------------- */
 .tcy {
-  -webkit-text-combine: horizontal;
-  -epub-text-combine:   horizontal;
+  -webkit-text-combine:         horizontal;
+  -webkit-text-combine-upright: all;
+  text-combine-upright:         all;
+  -epub-text-combine:           horizontal;
 }
 
 
@@ -319,8 +319,10 @@ img.gaiji-wide {
 【WebKit対策】半角１文字の直立はセンターが揃わないので縦中横を利用
 ---------------------------------------------------------------- */
 .upright-1 {
-  -webkit-text-combine:     horizontal;
-  -epub-text-combine:       horizontal;
+  -webkit-text-combine:         horizontal;
+  -webkit-text-combine-upright: all;
+  text-combine-upright:         all;
+  -epub-text-combine:           horizontal;
 }
 .upright {
   -webkit-text-orientation: upright;
@@ -328,7 +330,6 @@ img.gaiji-wide {
 }
 .sideways {
   -webkit-text-orientation: sideways;
-  -epub-text-orientation:   rotate-right;
   -epub-text-orientation:   sideways;
 }
 

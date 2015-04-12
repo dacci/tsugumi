@@ -1,79 +1,56 @@
 /*
- * Copyright (c) 2014 dacci.org
+ * Copyright (c) 2015 dacci.org
  */
 
 package org.dacci.tsugumi.doc;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 /**
  * @author dacci
  */
-public class Paragraph {
+public class Paragraph extends BookElement {
 
-    private PageElement element;
+    private final Fragment fragment;
 
-    protected String style;
+    private final Set<Style> styles = new LinkedHashSet<>();
 
-    protected int captionLevel = 0;
-
-    public Paragraph(PageElement element) {
-        this.element = element;
-    }
-
-    protected Paragraph() {
+    public Paragraph(String text) {
+        fragment = new Fragment(text);
     }
 
     /**
-     * @return the style
+     * @return the fragment
      */
-    public String getStyle() {
-        return style;
+    public Fragment getFragment() {
+        return fragment;
     }
 
     /**
      * @param style
-     *            the style to set
+     * @return
      */
-    public void setStyle(String style) {
-        this.style = style;
+    public boolean addStyle(Style style) {
+        if (style == null) {
+            throw new NullPointerException();
+        }
+
+        return styles.add(style);
     }
 
     /**
-     * @return the captionLevel
+     * 
      */
-    public int getCaptionLevel() {
-        return captionLevel;
+    public void clearStyles() {
+        styles.clear();
     }
 
     /**
-     * @param captionLevel
-     *            the captionLevel to set
+     * @return
      */
-    public void setCaptionLevel(int captionLevel) {
-        this.captionLevel = captionLevel;
-    }
-
-    public Node build(Document document) {
-        String tagName = "p";
-        if (captionLevel > 0) {
-            tagName = "h" + captionLevel;
-        }
-
-        Element paragraph = document.createElement(tagName);
-
-        if (style != null && !style.isEmpty()) {
-            paragraph.setAttribute("class", style);
-        }
-
-        if (element.length() == 0) {
-            paragraph.appendChild(document.createElement("br"));
-        } else {
-            paragraph.appendChild(element.build(document));
-        }
-
-        return paragraph;
+    public Iterable<Style> styles() {
+        return Collections.unmodifiableCollection(styles);
     }
 }

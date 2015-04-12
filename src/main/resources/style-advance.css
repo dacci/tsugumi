@@ -7,10 +7,10 @@
 全作品共通の基本スタイル（論理方向指定・組み方向の入れ子対策用）
 
 【CSSファイルバージョン】
-ver.1.3.0
+ver.1.3.1
 
 【当ファイル更新時の電書協EPUB 3 制作ガイドバージョン】
-ver.1.1.1
+ver.1.1.3
 
 【細目】
 ・【組み方向の入れ子対策】リンク指定
@@ -30,6 +30,9 @@ ver.1.1.1
 ・【論理方向指定】行幅方向の最大サイズ
 
 【更新履歴】
+2014/11/01 ver.1.3.1
+・「線位置【二重線】」を修正
+
 2012/12/07 ver.1.3.0
 ・ファイル更新時の電書協EPUB 3 制作ガイドバージョン表記を追加
 
@@ -191,7 +194,7 @@ ver.1.1.1
   border-width: 4px;
   border-color: #000000;
 }
-/* 線位置【二重線】 */
+/* 線位置【二重線】*/
 /* 横組み用 */
 .hltr .k-double-start,       .vrtl .hltr .k-double-start       { border-style: none none none double;   }
 .hltr .k-double-before,      .vrtl .hltr .k-double-before      { border-style: double none none none;   }
@@ -200,12 +203,12 @@ ver.1.1.1
 .hltr .k-double-startend,    .vrtl .hltr .k-double-startend    { border-style: none double none double; }
 .hltr .k-double-beforeafter, .vrtl .hltr .k-double-beforeafter { border-style: double none double none; }
 /* 縦組み用 */
-.vrtl .k-double-start,       .vrtl .hltr .k-double-start       { border-style: double none none none;   }
-.vrtl .k-double-before,      .vrtl .hltr .k-double-before      { border-style: none double none none;   }
-.vrtl .k-double-end,         .vrtl .hltr .k-double-end         { border-style: none none double none;   }
-.vrtl .k-double-after,       .vrtl .hltr .k-double-after       { border-style: none none none double;   }
-.vrtl .k-double-startend,    .vrtl .hltr .k-double-startend    { border-style: double none double none; }
-.vrtl .k-double-beforeafter, .vrtl .hltr .k-double-beforeafter { border-style: none double none double; }
+.vrtl .k-double-start,       .hltr .vrtl .k-double-start       { border-style: double none none none;   }
+.vrtl .k-double-before,      .hltr .vrtl .k-double-before      { border-style: none double none none;   }
+.vrtl .k-double-end,         .hltr .vrtl .k-double-end         { border-style: none none double none;   }
+.vrtl .k-double-after,       .hltr .vrtl .k-double-after       { border-style: none none none double;   }
+.vrtl .k-double-startend,    .hltr .vrtl .k-double-startend    { border-style: double none double none; }
+.vrtl .k-double-beforeafter, .hltr .vrtl .k-double-beforeafter { border-style: none double none double; }
 
 /* 線種【破線】 */
 .k-dashed-start,

@@ -1,40 +1,28 @@
 /*
- * Copyright (c) 2014 dacci.org
+ * Copyright (c) 2015 dacci.org
  */
 
 package org.dacci.tsugumi.doc;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.xml.parsers.DocumentBuilder;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.util.EnumMap;
 
 /**
  * @author dacci
  */
-public class Chapter extends ParagraphContainer {
+public class Chapter {
 
-    public static final String TITLE = "タイトル";
+    private Book book = null;
 
-    private final Book book;
+    private final EnumMap<BookProperty, String> properties = new EnumMap<>(
+            BookProperty.class);
 
-    private final PageResource resource;
-
-    private String type;
-
-    private final Map<String, String> properties = new HashMap<>();
+    private final Block root = new Block();
 
     /**
      * 
      */
-    Chapter(Book book, PageResource resource) {
-        this.book = book;
-        this.resource = resource;
-
-        setStyle("p-text");
+    public Chapter() {
+        root.setChapter(this);
     }
 
     /**
@@ -45,87 +33,42 @@ public class Chapter extends ParagraphContainer {
     }
 
     /**
-     * @return the resource
+     * @param book
+     *            the book to set
      */
-    public Resource getResource() {
-        return resource;
+    void setBook(Book book) {
+        this.book = book;
     }
 
     /**
-     * @return the type
-     */
-    public String getType() {
-        return type;
-    }
-
-    /**
-     * @param type
-     *            the type to set
-     */
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    /**
-     * @param name
+     * @param key
      * @return
      */
-    public String getProperty(String name) {
-        return properties.get(name);
+    public boolean hasProperty(BookProperty key) {
+        return properties.containsKey(key);
     }
 
     /**
-     * @param name
+     * @param key
+     * @return
+     */
+    public String getProperty(BookProperty key) {
+        return properties.get(key);
+    }
+
+    /**
+     * @param key
      * @param value
      * @return
      */
-    public String setProperty(String name, String value) {
-        return properties.put(name, value);
+    public String setProperty(BookProperty key, String value) {
+        return properties.put(key, value);
     }
 
-    public void build(DocumentBuilder builder) {
-        Document document = builder.newDocument();
-
-        Element html = document.createElement("html");
-        html.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
-        html.setAttribute("xmlns:epub", "http://www.idpf.org/2007/ops");
-        html.setAttribute("xml:lang", "ja");
-        document.appendChild(html);
-
-        Element head = document.createElement("head");
-        html.appendChild(head);
-
-        Element element = document.createElement("meta");
-        element.setAttribute("charset", "UTF-8");
-        head.appendChild(element);
-
-        element = document.createElement("title");
-        head.appendChild(element);
-
-        element.appendChild(document.createTextNode(book.getTitle()));
-        if (properties.containsKey(TITLE)) {
-            element.appendChild(document.createTextNode(" - "));
-            element.appendChild(document.createTextNode(properties.get(TITLE)));
-        }
-
-        element = document.createElement("link");
-        element.setAttribute("rel", "stylesheet");
-        element.setAttribute("type", "text/css");
-        element.setAttribute("href", "../style/book-style.css");
-        head.appendChild(element);
-
-        Element body = document.createElement("body");
-        html.appendChild(body);
-
-        if (type != null && !type.isEmpty()) {
-            body.setAttribute("epub:type", type);
-        }
-
-        Element content = (Element) build(document);
-        body.setAttribute("class", content.getAttribute("class"));
-        content.setAttribute("class", "main");
-        body.appendChild(content);
-
-        resource.setDocument(document);
+    /**
+     * @return the root
+     */
+    public Block getRoot() {
+        return root;
     }
 }

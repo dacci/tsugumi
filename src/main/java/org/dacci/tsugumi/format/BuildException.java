@@ -1,41 +1,41 @@
 /*
- * Copyright (c) 2014 dacci.org
+ * Copyright (c) 2015 dacci.org
  */
 
-package org.dacci.tsugumi;
+package org.dacci.tsugumi.format;
 
 /**
  * @author dacci
  */
 @SuppressWarnings("serial")
-public class BuilderException extends Exception {
+public class BuildException extends Exception {
 
     /**
      * 
      */
-    public BuilderException() {
+    public BuildException() {
     }
 
     /**
      * @param message
      */
-    public BuilderException(String message) {
+    public BuildException(String message) {
         super(message);
     }
 
     /**
-     * @param message
      * @param cause
      */
-    public BuilderException(String message, Throwable cause) {
-        super(message, cause);
+    public BuildException(Throwable cause) {
+        super(cause);
     }
 
     /**
+     * @param message
      * @param cause
      */
-    public BuilderException(Throwable cause) {
-        super(cause);
+    public BuildException(String message, Throwable cause) {
+        super(message, cause);
     }
 
     /**
@@ -44,7 +44,7 @@ public class BuilderException extends Exception {
      * @param enableSuppression
      * @param writableStackTrace
      */
-    protected BuilderException(String message, Throwable cause,
+    public BuildException(String message, Throwable cause,
             boolean enableSuppression, boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
