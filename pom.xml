@@ -19,8 +19,9 @@
   </organization>
 
   <scm>
-    <url>https://bitbucket.org/dacci/tsugumi</url>
-    <connection>scm:git:https://bitbucket.org/dacci/tsugumi.git</connection>
+    <url>https://github.com/dacci/tsugumi</url>
+    <connection>scm:git:https://github.com/dacci/tsugumi.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/dacci/tsugumi.git</developerConnection>
   </scm>
 
   <dependencies>
