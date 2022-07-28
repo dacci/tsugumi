@@ -13,44 +13,42 @@ import java.util.Set;
  */
 public class Paragraph extends BookElement {
 
-    private final Fragment fragment;
+  private final Fragment fragment;
 
-    private final Set<Style> styles = new LinkedHashSet<>();
+  private final Set<Style> styles = new LinkedHashSet<>();
 
-    public Paragraph(String text) {
-        fragment = new Fragment(text);
+  public Paragraph(String text) {
+    fragment = new Fragment(text);
+  }
+
+  /**
+   * @return the fragment
+   */
+  public Fragment getFragment() {
+    return fragment;
+  }
+
+  /**
+   * @param style
+   * @return
+   */
+  public boolean addStyle(Style style) {
+    if (style == null) {
+      throw new NullPointerException();
     }
 
-    /**
-     * @return the fragment
-     */
-    public Fragment getFragment() {
-        return fragment;
-    }
+    return styles.add(style);
+  }
 
-    /**
-     * @param style
-     * @return
-     */
-    public boolean addStyle(Style style) {
-        if (style == null) {
-            throw new NullPointerException();
-        }
+  /** */
+  public void clearStyles() {
+    styles.clear();
+  }
 
-        return styles.add(style);
-    }
-
-    /**
-     * 
-     */
-    public void clearStyles() {
-        styles.clear();
-    }
-
-    /**
-     * @return
-     */
-    public Iterable<Style> styles() {
-        return Collections.unmodifiableCollection(styles);
-    }
+  /**
+   * @return
+   */
+  public Iterable<Style> styles() {
+    return Collections.unmodifiableCollection(styles);
+  }
 }

@@ -13,63 +13,54 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  */
 public class FontSizeStyle implements Style, Cloneable {
 
-    private int level;
+  private int level;
 
-    /**
-     * @param level
-     */
-    public FontSizeStyle(int level) {
-        this.level = level;
-    }
+  /**
+   * @param level
+   */
+  public FontSizeStyle(int level) {
+    this.level = level;
+  }
 
-    /**
-     * @return the level
-     */
-    public int getLevel() {
-        return level;
-    }
+  /**
+   * @return the level
+   */
+  public int getLevel() {
+    return level;
+  }
 
-    /**
-     * @param level
-     *            the level to set
-     */
-    public void setLevel(int level) {
-        this.level = level;
-    }
+  /**
+   * @param level the level to set
+   */
+  public void setLevel(int level) {
+    this.level = level;
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
-    }
+  /** {@inheritDoc} */
+  @Override
+  public int hashCode() {
+    return HashCodeBuilder.reflectionHashCode(this);
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
+  /** {@inheritDoc} */
+  @Override
+  public boolean equals(Object obj) {
+    return EqualsBuilder.reflectionEquals(this, obj);
+  }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public String toString() {
-        return ToStringBuilder.reflectionToString(this);
-    }
+  /** {@inheritDoc} */
+  @Override
+  public String toString() {
+    return ToStringBuilder.reflectionToString(this);
+  }
 
-    /**
-     * {@InheritDoc}
-     */
-    @Override
-    public Style copy() {
-        try {
-            return (FontSizeStyle) super.clone();
-        } catch (CloneNotSupportedException e) {
-            throw new Error(e);
-        }
+  /** {@InheritDoc} */
+  @Override
+  public Style copy() {
+    try {
+      return (FontSizeStyle) super.clone();
+    } catch (CloneNotSupportedException e) {
+      throw new Error(e);
     }
+  }
 }

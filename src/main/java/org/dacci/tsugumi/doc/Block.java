@@ -15,67 +15,64 @@ import java.util.Set;
  */
 public class Block extends BookElement {
 
-    private Chapter chapter = null;
+  private Chapter chapter = null;
 
-    private final List<BookElement> elements = new ArrayList<>();
+  private final List<BookElement> elements = new ArrayList<>();
 
-    private final Set<Style> styles = new LinkedHashSet<>();
+  private final Set<Style> styles = new LinkedHashSet<>();
 
-    public BookElement addElement(BookElement element) {
-        if (element == null) {
-            throw new NullPointerException();
-        }
-        if (element.getParent() != null) {
-            throw new IllegalArgumentException();
-        }
-
-        if (!elements.add(element)) {
-            return null;
-        }
-
-        element.setParent(this);
-
-        return element;
+  public BookElement addElement(BookElement element) {
+    if (element == null) {
+      throw new NullPointerException();
+    }
+    if (element.getParent() != null) {
+      throw new IllegalArgumentException();
     }
 
-    public Iterable<BookElement> elements() {
-        return Collections.unmodifiableCollection(elements);
+    if (!elements.add(element)) {
+      return null;
     }
 
-    /**
-     * @return the chapter
-     */
-    public Chapter getChapter() {
-        return chapter;
-    }
+    element.setParent(this);
 
-    /**
-     * @param chapter
-     *            the chapter to set
-     */
-    void setChapter(Chapter chapter) {
-        this.chapter = chapter;
-    }
+    return element;
+  }
 
-    /**
-     * @param style
-     * @return
-     */
-    public boolean addStyle(Style style) {
-        return styles.add(style);
-    }
+  public Iterable<BookElement> elements() {
+    return Collections.unmodifiableCollection(elements);
+  }
 
-    /**
-     * 
-     */
-    public void clearStyles() {
-        styles.clear();
-    }
+  /**
+   * @return the chapter
+   */
+  public Chapter getChapter() {
+    return chapter;
+  }
 
-    /**
-     * @return
-     */
-    public Iterable<Style> styles() {
-        return Collections.unmodifiableCollection(styles);
-    }
+  /**
+   * @param chapter the chapter to set
+   */
+  void setChapter(Chapter chapter) {
+    this.chapter = chapter;
+  }
+
+  /**
+   * @param style
+   * @return
+   */
+  public boolean addStyle(Style style) {
+    return styles.add(style);
+  }
+
+  /** */
+  public void clearStyles() {
+    styles.clear();
+  }
+
+  /**
+   * @return
+   */
+  public Iterable<Style> styles() {
+    return Collections.unmodifiableCollection(styles);
+  }
 }

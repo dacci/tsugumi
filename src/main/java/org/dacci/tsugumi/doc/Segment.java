@@ -9,13 +9,11 @@ package org.dacci.tsugumi.doc;
  */
 public interface Segment extends CharSequence {
 
-    boolean hasChildren();
+  boolean hasChildren();
 
-    StringBuilder toString(StringBuilder builder);
+  StringBuilder toString(StringBuilder builder);
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    Segment subSequence(int start, int end);
+  /** {@inheritDoc} */
+  @Override
+  Segment subSequence(int start, int end);
 }

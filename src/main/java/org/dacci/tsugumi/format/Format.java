@@ -13,16 +13,15 @@ import org.dacci.tsugumi.doc.Book;
  */
 public interface Format {
 
-    String OUTPUT_PATH = "OutputPath";
+  String OUTPUT_PATH = "OutputPath";
 
-    default void setProperty(String key, Object value) {
-    }
+  default void setProperty(String key, Object value) {}
 
-    boolean isParseSupported();
+  boolean isParseSupported();
 
-    Book parse(Path path) throws ParseException;
+  Book parse(Path path) throws ParseException;
 
-    boolean isBuildSupported();
+  boolean isBuildSupported();
 
-    Path build(Book book) throws BuildException;
+  Path build(Book book) throws BuildException;
 }

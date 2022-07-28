@@ -12,11 +12,9 @@ import org.dacci.tsugumi.format.FormatFactory;
  */
 public class AozoraFormatFactory implements FormatFactory {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Format newInstance() {
-        return new AozoraFormat();
-    }
+  /** {@inheritDoc} */
+  @Override
+  public Format newInstance() {
+    return new AozoraFormat();
+  }
 }

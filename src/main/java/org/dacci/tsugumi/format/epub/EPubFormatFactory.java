@@ -12,11 +12,9 @@ import org.dacci.tsugumi.format.FormatFactory;
  */
 public class EPubFormatFactory implements FormatFactory {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public Format newInstance() {
-        return new EPubFormat();
-    }
+  /** {@inheritDoc} */
+  @Override
+  public Format newInstance() {
+    return new EPubFormat();
+  }
 }

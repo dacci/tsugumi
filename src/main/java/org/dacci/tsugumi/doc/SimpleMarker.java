@@ -8,5 +8,5 @@ package org.dacci.tsugumi.doc;
  * @author dacci
  */
 public enum SimpleMarker implements Marker {
-    LineBreak
+  LineBreak
 }

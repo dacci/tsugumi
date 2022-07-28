@@ -11,20 +11,19 @@ import org.w3c.dom.Document;
  */
 public class DocumentResource extends Resource {
 
-    private Document document;
+  private Document document;
 
-    /**
-     * @return the document
-     */
-    public Document getDocument() {
-        return document;
-    }
+  /**
+   * @return the document
+   */
+  public Document getDocument() {
+    return document;
+  }
 
-    /**
-     * @param document
-     *            the document to set
-     */
-    public void setDocument(Document document) {
-        this.document = document;
-    }
+  /**
+   * @param document the document to set
+   */
+  public void setDocument(Document document) {
+    this.document = document;
+  }
 }

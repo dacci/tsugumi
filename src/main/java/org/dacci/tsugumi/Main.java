@@ -29,79 +29,73 @@ import ch.qos.logback.classic.Level;
  */
 public final class Main {
 
-    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-    private static final String OPTION_HELP = "h";
+  private static final String OPTION_HELP = "h";
 
-    private static final String OPTION_DIRECTORY = "d";
+  private static final String OPTION_DIRECTORY = "d";
 
-    private static final String OPTION_VERBOSE = "v";
+  private static final String OPTION_VERBOSE = "v";
 
-    private static FormatFactory parserFactory = new AozoraFormatFactory();
+  private static FormatFactory parserFactory = new AozoraFormatFactory();
 
-    private static FormatFactory builderFactory = new EPubFormatFactory();
+  private static FormatFactory builderFactory = new EPubFormatFactory();
 
-    private static CommandLine commandLine;
+  private static CommandLine commandLine;
 
-    /**
-     * @param args
-     */
-    @SuppressWarnings("unchecked")
-    public static void main(String[] args) {
-        Options options = new Options();
+  /**
+   * @param args
+   */
+  @SuppressWarnings("unchecked")
+  public static void main(String[] args) {
+    Options options = new Options();
 
-        options.addOption(OPTION_HELP, "help", false, "Show help message.");
-        options.addOption(OPTION_DIRECTORY, "directory", false,
-                "Output as a directory.");
-        options.addOption(OPTION_VERBOSE, "verbose", false,
-                "Increase verbosity.");
+    options.addOption(OPTION_HELP, "help", false, "Show help message.");
+    options.addOption(OPTION_DIRECTORY, "directory", false, "Output as a directory.");
+    options.addOption(OPTION_VERBOSE, "verbose", false, "Increase verbosity.");
 
-        try {
-            commandLine = new GnuParser().parse(options, args);
+    try {
+      commandLine = new GnuParser().parse(options, args);
 
-            if (commandLine.getArgList().size() == 0 ||
-                    commandLine.hasOption(OPTION_HELP)) {
-                new HelpFormatter().printHelp(
-                        "tsugumi [OPTIONS] FILE [FILE...]", options);
-                return;
-            }
+      if (commandLine.getArgList().size() == 0 || commandLine.hasOption(OPTION_HELP)) {
+        new HelpFormatter().printHelp("tsugumi [OPTIONS] FILE [FILE...]", options);
+        return;
+      }
 
-            if (commandLine.hasOption(OPTION_VERBOSE)) {
-                ch.qos.logback.classic.Logger rootLogger =
-                        (ch.qos.logback.classic.Logger) LoggerFactory
-                                .getLogger(Logger.ROOT_LOGGER_NAME);
-                rootLogger.setLevel(Level.DEBUG);
-            }
+      if (commandLine.hasOption(OPTION_VERBOSE)) {
+        ch.qos.logback.classic.Logger rootLogger =
+            (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        rootLogger.setLevel(Level.DEBUG);
+      }
 
-            for (String arg : (List<String>) commandLine.getArgList()) {
-                processFile(Paths.get(arg));
-            }
-        } catch (org.apache.commons.cli.ParseException e) {
-            System.out.println(e.getMessage());
-        }
+      for (String arg : (List<String>) commandLine.getArgList()) {
+        processFile(Paths.get(arg));
+      }
+    } catch (org.apache.commons.cli.ParseException e) {
+      System.out.println(e.getMessage());
     }
+  }
 
-    /**
-     * @param path
-     */
-    private static void processFile(Path path) {
-        try {
-            LOG.info("Begin parsing {} . . .", path);
-            Book book = parserFactory.newInstance().parse(path);
+  /**
+   * @param path
+   */
+  private static void processFile(Path path) {
+    try {
+      LOG.info("Begin parsing {} . . .", path);
+      Book book = parserFactory.newInstance().parse(path);
 
-            LOG.info("Building book . . .");
-            Format builder = builderFactory.newInstance();
-            builder.setProperty(Format.OUTPUT_PATH, path.getParent());
+      LOG.info("Building book . . .");
+      Format builder = builderFactory.newInstance();
+      builder.setProperty(Format.OUTPUT_PATH, path.getParent());
 
-            builder.build(book);
-            LOG.info("Done!");
-        } catch (ParseException e) {
-            LOG.error("Parse error", e);
-        } catch (BuildException e) {
-            LOG.error("Build error", e);
-        }
+      builder.build(book);
+      LOG.info("Done!");
+    } catch (ParseException e) {
+      LOG.error("Parse error", e);
+    } catch (BuildException e) {
+      LOG.error("Build error", e);
     }
+  }
 
-    private Main() {
-    }
+  private Main() {}
 }

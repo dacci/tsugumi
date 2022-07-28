@@ -16,56 +16,54 @@ import java.util.regex.Pattern;
  */
 public final class Util {
 
-    public static int parseInt(String string) {
-        int result = 0;
+  public static int parseInt(String string) {
+    int result = 0;
 
-        for (int i = 0, l = string.length(); i < l; ++i) {
-            int digit = Character.getNumericValue(string.codePointAt(i));
-            if (digit < 0 || 9 < digit) {
-                throw new NumberFormatException(string);
-            }
+    for (int i = 0, l = string.length(); i < l; ++i) {
+      int digit = Character.getNumericValue(string.codePointAt(i));
+      if (digit < 0 || 9 < digit) {
+        throw new NumberFormatException(string);
+      }
 
-            result = result * 10 + digit;
-        }
-
-        return result;
+      result = result * 10 + digit;
     }
 
-    /**
-     * @param pattern
-     * @param input
-     * @param reverse
-     * @return
-     */
-    public static List<MatchResult> findAll(Pattern pattern,
-            CharSequence input, boolean reverse) {
-        List<MatchResult> results = new ArrayList<>();
+    return result;
+  }
 
-        Matcher matcher = pattern.matcher(input);
-        while (matcher.find()) {
-            results.add(matcher.toMatchResult());
-        }
+  /**
+   * @param pattern
+   * @param input
+   * @param reverse
+   * @return
+   */
+  public static List<MatchResult> findAll(Pattern pattern, CharSequence input, boolean reverse) {
+    List<MatchResult> results = new ArrayList<>();
 
-        if (reverse) {
-            Collections.reverse(results);
-        }
-
-        return results;
+    Matcher matcher = pattern.matcher(input);
+    while (matcher.find()) {
+      results.add(matcher.toMatchResult());
     }
 
-    public static String safeFileName(String string) {
-        string = string.replace('\\', '_');
-        string = string.replace('/', '_');
-        string = string.replace(':', '_');
-        string = string.replace('*', '_');
-        string = string.replace('?', '_');
-        string = string.replace('"', '_');
-        string = string.replace('<', '_');
-        string = string.replace('>', '_');
-        string = string.replace('|', '_');
-        return string;
+    if (reverse) {
+      Collections.reverse(results);
     }
 
-    private Util() {
-    }
+    return results;
+  }
+
+  public static String safeFileName(String string) {
+    string = string.replace('\\', '_');
+    string = string.replace('/', '_');
+    string = string.replace(':', '_');
+    string = string.replace('*', '_');
+    string = string.replace('?', '_');
+    string = string.replace('"', '_');
+    string = string.replace('<', '_');
+    string = string.replace('>', '_');
+    string = string.replace('|', '_');
+    return string;
+  }
+
+  private Util() {}
 }

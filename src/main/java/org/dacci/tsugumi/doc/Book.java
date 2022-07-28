@@ -18,78 +18,77 @@ import java.util.Set;
  */
 public class Book {
 
-    private final EnumMap<BookProperty, String> properties = new EnumMap<>(
-            BookProperty.class);
+  private final EnumMap<BookProperty, String> properties = new EnumMap<>(BookProperty.class);
 
-    private final List<Chapter> chapters = new ArrayList<>();
+  private final List<Chapter> chapters = new ArrayList<>();
 
-    private final Set<Path> resources = new LinkedHashSet<>();
+  private final Set<Path> resources = new LinkedHashSet<>();
 
-    /**
-     * @param chapter
-     * @return
-     */
-    public Chapter addChapter(Chapter chapter) {
-        if (chapter == null) {
-            throw new NullPointerException();
-        }
-        if (chapter.getBook() != null) {
-            throw new IllegalArgumentException();
-        }
-
-        if (!chapters.add(chapter)) {
-            return null;
-        }
-
-        chapter.setBook(this);
-
-        return chapter;
+  /**
+   * @param chapter
+   * @return
+   */
+  public Chapter addChapter(Chapter chapter) {
+    if (chapter == null) {
+      throw new NullPointerException();
+    }
+    if (chapter.getBook() != null) {
+      throw new IllegalArgumentException();
     }
 
-    /**
-     * @return
-     */
-    public Collection<Chapter> chapters() {
-        return Collections.unmodifiableCollection(chapters);
+    if (!chapters.add(chapter)) {
+      return null;
     }
 
-    /**
-     * @param path
-     * @return
-     */
-    public boolean loadResource(Path path) {
-        return resources.add(path.toAbsolutePath());
-    }
+    chapter.setBook(this);
 
-    /**
-     * @return
-     */
-    public Collection<Path> resources() {
-        return Collections.unmodifiableCollection(resources);
-    }
+    return chapter;
+  }
 
-    /**
-     * @param key
-     * @return
-     */
-    public boolean hasProperty(BookProperty key) {
-        return properties.containsKey(key);
-    }
+  /**
+   * @return
+   */
+  public Collection<Chapter> chapters() {
+    return Collections.unmodifiableCollection(chapters);
+  }
 
-    /**
-     * @param key
-     * @return
-     */
-    public String getProperty(BookProperty key) {
-        return properties.get(key);
-    }
+  /**
+   * @param path
+   * @return
+   */
+  public boolean loadResource(Path path) {
+    return resources.add(path.toAbsolutePath());
+  }
 
-    /**
-     * @param key
-     * @param value
-     * @return
-     */
-    public String setProperty(BookProperty key, String value) {
-        return properties.put(key, value);
-    }
+  /**
+   * @return
+   */
+  public Collection<Path> resources() {
+    return Collections.unmodifiableCollection(resources);
+  }
+
+  /**
+   * @param key
+   * @return
+   */
+  public boolean hasProperty(BookProperty key) {
+    return properties.containsKey(key);
+  }
+
+  /**
+   * @param key
+   * @return
+   */
+  public String getProperty(BookProperty key) {
+    return properties.get(key);
+  }
+
+  /**
+   * @param key
+   * @param value
+   * @return
+   */
+  public String setProperty(BookProperty key, String value) {
+    return properties.put(key, value);
+  }
 }

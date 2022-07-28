@@ -9,8 +9,7 @@ package org.dacci.tsugumi.format;
  */
 public interface FormatFactory {
 
-    Format newInstance();
+  Format newInstance();
 
-    default void setOption(String key, Object value) {
-    }
+  default void setOption(String key, Object value) {}
 }

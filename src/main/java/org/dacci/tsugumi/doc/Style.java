@@ -9,5 +9,5 @@ package org.dacci.tsugumi.doc;
  */
 public interface Style {
 
-    Style copy();
+  Style copy();
 }
